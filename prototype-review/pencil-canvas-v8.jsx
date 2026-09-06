@@ -344,12 +344,15 @@ export default function PencilCanvas(){
   const runWalkthrough=()=>{
     clearTimeout(walkTimer.current);
     setDemo(true);setSel(null);setSubset([]);setPin(false);setFocus(null);setAudit(false);setFmtMenu(false);setPanelMenu(false);setZoomMenu(false);
-    setNotice("Select any element to edit across formats");
+    setNotice("1 / 3 · Select any element to edit across formats");
     walkTimer.current=setTimeout(()=>{
       setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setFocus(null);
-      setNotice("Headline selected · shared across formats");
-      walkTimer.current=setTimeout(()=>setNotice("Edit once · formats update together"),1800);
-    },1400);
+      setNotice("2 / 3 · Headline selected · shared across formats");
+      walkTimer.current=setTimeout(()=>{
+        setNotice("3 / 3 · Edit once · formats update together");
+        walkTimer.current=setTimeout(()=>setNotice(null),2200);
+      },1800);
+    },1600);
   };
   const scope=subset.length?placed.filter(f=>subset.includes(f.id)):placed;
   const targets=sel?scope.filter(f=>carries(f,sel)&&(subset.length||ov[sel]?.[f.id]===undefined)):[];
