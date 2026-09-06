@@ -316,13 +316,13 @@ export default function PencilCanvas(){
     }
     if(el==="subhead"){
       const F=FAM[f.fam], W=f.dw, px=W*.042*(fmtSubAdapted[f.id]||1), avail=W*(1-2*F.pad/100);
-      return !headlineFits(valIn(el,f.id),px,avail,Math.max(2,F.lines))||subheadCollidesWithCta(valIn(el,f.id),px,avail,f.fam);
+      return !headlineFits(valIn(el,f.id),px,avail,Math.max(2,F.lines));
     }
     if(el!=="headline") return false;
     const F=FAM[f.fam], W=f.dw;
     const px=W*F.head*(fmtAdapted[f.id]||1);
     const avail=W*(1-2*F.pad/100);
-    return !headlineFits(valIn(el,f.id),px,avail,F.lines)||headlineCollidesWithLogo(valIn(el,f.id),px,avail,f.fam);
+    return !headlineFits(valIn(el,f.id),px,avail,F.lines);
   },[valIn,fmtAdapted,fmtSubAdapted,fmtCtaAdapted,carries]);
   const elementScale=(el,f)=>el==="cta"?(fmtCtaAdapted[f.id]||1):(fmtAdapted[f.id]||1);
 
@@ -343,7 +343,7 @@ export default function PencilCanvas(){
   };
   const runWalkthrough=()=>{
     clearTimeout(walkTimer.current);
-    setDemo(true);setSel(null);setSubset([]);setPin(false);setFocus(null);setAudit(false);
+    setDemo(true);setSel(null);setSubset([]);setPin(false);setFocus(null);setAudit(false);setFmtMenu(false);setPanelMenu(false);setZoomMenu(false);
     setNotice("Select any element to edit across formats");
     walkTimer.current=setTimeout(()=>{
       setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setFocus(null);
@@ -736,17 +736,7 @@ export default function PencilCanvas(){
             </div>
           )}
 
-          {stateHint&&pendingCount>0&&(
-            <div role="status" style={{position:"absolute",left:"50%",bottom:20,transform:"translateX(-50%)",
-              background:"#fff",color:"#302e28",fontSize:12.5,padding:"9px 10px 9px 14px",borderRadius:9,
-              border:"1px solid #e8c578",boxShadow:"0 4px 16px rgba(20,18,10,.12)",display:"flex",alignItems:"center",gap:10,zIndex:8}}>
-              <span style={{width:7,height:7,borderRadius:9,background:C.warn,flexShrink:0}}/>
-              <span>{stateHint} · select it to review</span>
-              <button aria-label="Dismiss" onClick={()=>setStateHint(null)} style={{border:0,background:"transparent",color:"#8b877d",fontSize:16,lineHeight:1,cursor:"pointer",padding:"0 2px"}}>×</button>
-            </div>
-          )}
-
-          {!sel&&!demo&&!notice&&!stateHint&&(
+          {!sel&&!demo&&!notice&&(
             <button onClick={()=>pick("headline",placed[0]?.id,false)} style={{position:"absolute",left:"50%",bottom:20,transform:"translateX(-50%)",
               background:"#fff",color:"#4a4840",fontSize:12.5,padding:"9px 14px",borderRadius:9,border:"1px solid #dedbd4",
               boxShadow:"0 3px 12px rgba(20,18,10,.08)",cursor:"pointer",zIndex:7}}>Select any element to edit across formats</button>
