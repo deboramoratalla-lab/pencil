@@ -368,13 +368,13 @@ export default function PencilCanvas(){
       ["1 / 7 · Select any element to edit across formats",()=>{setDemo(true);setSel(null);setSubset([]);setScopeMode("all");setFocus(null);setPin(false);}],
       ["2 / 7 · Headline selected · shared across formats",()=>{setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setScopeMode("all");setFocus(null);}],
       ["3 / 7 · Choose a 9:16 group · keep other ratios independent",()=>{setScopeMode("vertical");setSubset(vertical);setFocus(vertical);setPin(true);}],
-      ["4 / 7 · Edit once · only the 9:16 group updates",()=>{setOv(o=>{const n={...(o.headline||{})};vertical.forEach(id=>n[id]="Discover beautiful shiny hair");return {...o,headline:n};});setFmtAdapted({});setTyping(false);}],
+      ["4 / 7 · Add copy · the 9:16 group reaches its limit",()=>{setOv(o=>{const n={...(o.headline||{})};vertical.forEach(id=>n[id]="Discover beautiful shiny hair powered by nourishing argan oil");return {...o,headline:n};});setFmtAdapted({});setTyping(false);}],
       ["5 / 7 · One group diverges · local constraint detected",()=>{setFocus(vertical);setPin(true);setUnrev(u=>{const n={...u};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});}],
       ["6 / 7 · AI recommends a layout adaptation",()=>{setAdapted(true);setAdaptedIds(vertical);setAdaptedCount(vertical.length);setFmtAdapted(m=>{const n={...m};vertical.forEach(id=>n[id]=.82);return n;});}],
       ["7 / 7 · Approve the adaptation · group returns to green",()=>{setApproved(a=>{const n={...a};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});setUnrev(u=>{const n={...u};vertical.forEach(id=>delete n[`${id}:headline`]);return n;});setAdapted(false);setNotice(null);setPin(false);setFocus(null);}],
     ];
     setAudit(false);setFmtMenu(false);setPanelMenu(false);setZoomMenu(false);
-    let i=0; const advance=()=>{if(i>=steps.length){setNotice(null);return;}const [msg,fn]=steps[i++];fn();setNotice(msg);walkTimer.current=setTimeout(advance,i===steps.length?2600:1500);};
+    let i=0; const advance=()=>{if(i>=steps.length){setNotice(null);return;}const [msg,fn]=steps[i++];fn();setNotice(msg);walkTimer.current=setTimeout(advance,i===steps.length?4200:2600);};
     advance();
   };
   const scope=subset.length?placed.filter(f=>subset.includes(f.id)):placed;
