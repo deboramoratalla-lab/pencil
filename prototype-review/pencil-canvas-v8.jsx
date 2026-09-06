@@ -251,7 +251,9 @@ export default function PencilCanvas(){
   const [pulse,setPulse]=useState(false);          // consistency button, when work lands out of sight
   const [typing,setTyping]=useState(false);        // keep AI quiet until the user pauses
   const [notice,setNotice]=useState(null);         // brief confirmation; resolved work leaves no badge
-  const typingTimer=useRef(null), noticeTimer=useRef(null);
+  const [stateHint,setStateHint]=useState(null);   // one contextual explanation when attention first appears
+  const typingTimer=useRef(null), noticeTimer=useRef(null), walkTimer=useRef(null);
+  const previousPending=useRef(0);
 
   /* When an action has consequences the user cannot see, take them there rather
      than opening a panel over the thing they were looking at. */
@@ -315,6 +317,16 @@ export default function PencilCanvas(){
     if(shift&&sel===el){setSubset(s=>s.includes(fid)?s.filter(i=>i!==fid):s.concat(fid));return;}
     setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
   };
+  const runWalkthrough=()=>{
+    clearTimeout(walkTimer.current);
+    setDemo(true);setSel(null);setSubset([]);setPin(false);setFocus(null);setAudit(false);
+    setNotice("Select any element to edit across formats");
+    walkTimer.current=setTimeout(()=>{
+      setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setFocus(null);
+      setNotice("Headline selected · shared across formats");
+      walkTimer.current=setTimeout(()=>setNotice("Edit once · formats update together"),1800);
+    },1400);
+  };
   const scope=subset.length?placed.filter(f=>subset.includes(f.id)):placed;
   const targets=sel?scope.filter(f=>carries(f,sel)&&(subset.length||ov[sel]?.[f.id]===undefined)):[];
   const absent=sel?placed.filter(f=>!carries(f,sel)):[];
@@ -326,6 +338,13 @@ export default function PencilCanvas(){
   const reviewCount=useMemo(()=>Object.keys(unrev).length,[unrev]);
   const layoutIssueIds=useMemo(()=>placed.filter(f=>overflows("headline",f)).map(f=>f.id),[placed,overflows]);
   const layoutIssueCount=layoutIssueIds.length;
+  const pendingCount=reviewCount+layoutIssueCount;
+  useEffect(()=>{
+    if(pendingCount>0&&previousPending.current===0){
+      setStateHint(pendingCount===1?"1 format needs attention":`${pendingCount} formats need attention`);
+    }
+    previousPending.current=pendingCount;
+  },[pendingCount]);
 
   const edit=v=>{
     if(!v.trim()){
@@ -482,7 +501,7 @@ export default function PencilCanvas(){
   },[totalW,maxH]);
   useEffect(()=>{fit();},[fit]);
   useEffect(()=>{const el=wrap.current;if(!el)return;const observer=new ResizeObserver(fit);observer.observe(el);return()=>observer.disconnect();},[fit]);
-  useEffect(()=>()=>{clearTimeout(typingTimer.current);clearTimeout(noticeTimer.current);},[]);
+  useEffect(()=>()=>{clearTimeout(typingTimer.current);clearTimeout(noticeTimer.current);clearTimeout(walkTimer.current);},[]);
   useEffect(()=>{
     const handle=e=>{
       if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;
@@ -544,6 +563,7 @@ export default function PencilCanvas(){
           </div>}
         </div>
         <div style={{flex:1}}/>
+        <button onClick={runWalkthrough} title="Play walkthrough" style={{...ghost,fontSize:11.5,padding:"6px 9px",whiteSpace:"nowrap"}}>Play walkthrough</button>
         <div style={{display:"flex",background:"#f4f3f0",borderRadius:8,padding:2}}>
           <div style={{...seg,background:"#fff",boxShadow:"0 1px 2px rgba(0,0,0,.08)",display:"flex",alignItems:"center",gap:6}}>
             <NavIcon ico={RIGHT_NAV[1]} size={16}/>Design</div>
@@ -655,11 +675,11 @@ export default function PencilCanvas(){
 
                   {/* tier 2 — ambient. a dot. no text, ever. */}
                   {(hasUnrev||hasLayoutIssue)&&(
-                    <button onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();showFormats([f.id],hasLayoutIssue?"headline":els.find(el=>unrev[`${f.id}:${el}`]));}}
+                    <button aria-label={hasLayoutIssue?"Headline needs attention":"Review this format"}
+                      onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();showFormats([f.id],hasLayoutIssue?"headline":els.find(el=>unrev[`${f.id}:${el}`]));}}
                       title={hasLayoutIssue?"Headline needs attention":"Review this format"}
-                      style={{position:"absolute",top:f.dh+5,left:0,border:0,borderRadius:4,background:REV.bg,color:REV.fg,fontSize:10,padding:"3px 5px",cursor:"pointer",whiteSpace:"nowrap"}}>
-                      {hasLayoutIssue?"⚠ Overflow":"Unreviewed"}
-                    </button>
+                      style={{position:"absolute",top:f.dh+7,left:2,width:9,height:9,border:0,borderRadius:99,
+                        background:hasLayoutIssue?C.warn:REV.bg,cursor:"pointer",padding:0,boxShadow:"0 0 0 2px rgba(255,255,255,.82)"}}/>
                   )}
                 </div>
               );
@@ -681,6 +701,22 @@ export default function PencilCanvas(){
               opacity:.96,pointerEvents:"none",display:"flex",alignItems:"center",gap:8}}>
               <span style={{width:6,height:6,borderRadius:9,background:"#64c78e"}}/>{notice}
             </div>
+          )}
+
+          {stateHint&&pendingCount>0&&(
+            <div role="status" style={{position:"absolute",left:"50%",bottom:20,transform:"translateX(-50%)",
+              background:"#fff",color:"#302e28",fontSize:12.5,padding:"9px 10px 9px 14px",borderRadius:9,
+              border:"1px solid #e8c578",boxShadow:"0 4px 16px rgba(20,18,10,.12)",display:"flex",alignItems:"center",gap:10,zIndex:8}}>
+              <span style={{width:7,height:7,borderRadius:9,background:C.warn,flexShrink:0}}/>
+              <span>{stateHint} · select it to review</span>
+              <button aria-label="Dismiss" onClick={()=>setStateHint(null)} style={{border:0,background:"transparent",color:"#8b877d",fontSize:16,lineHeight:1,cursor:"pointer",padding:"0 2px"}}>×</button>
+            </div>
+          )}
+
+          {!sel&&!demo&&!notice&&!stateHint&&(
+            <button onClick={()=>pick("headline",placed[0]?.id,false)} style={{position:"absolute",left:"50%",bottom:20,transform:"translateX(-50%)",
+              background:"#fff",color:"#4a4840",fontSize:12.5,padding:"9px 14px",borderRadius:9,border:"1px solid #dedbd4",
+              boxShadow:"0 3px 12px rgba(20,18,10,.08)",cursor:"pointer",zIndex:7}}>Select any element to edit across formats</button>
           )}
 
         </div>
@@ -934,6 +970,11 @@ export default function PencilCanvas(){
                   {subset.length?`Editing ${subset.length} of ${placed.length}`:`Shared across ${targets.length} formats`}
                   {absent.length>0&&` · absent in ${absent.length}`}
                 </div>
+                {anchor&&placed.find(f=>f.id===anchor)&&(
+                  <div style={{fontSize:11,color:divIn.includes(anchor)?"#6a4fe8":"#6f6c63",marginBottom:9}}>
+                    {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
+                  </div>
+                )}
                 {(
                   <input aria-label={`Edit ${LABEL[sel]}`} value={subset.length===1?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
                     style={{width:"100%",border:"1px solid #e0dcd4",borderRadius:9,padding:"9px 11px",
@@ -994,10 +1035,10 @@ export default function PencilCanvas(){
                   </div>
                 )}
                 {adapted&&broken.length===0&&(
-                  <div style={{marginTop:12,background:REV.bg,border:`1px solid ${REV.line}`,
+                  <div style={{marginTop:12,background:"#f5f1ff",border:"1px solid #d9ccff",
                     borderRadius:10,padding:11}}>
-                    <div style={{fontSize:12,color:REV.fg,lineHeight:1.45}}>
-                      Adapted in {adaptedCount}. Review the highlighted formats before approving.
+                    <div style={{fontSize:12,color:"#5c43b6",lineHeight:1.45}}>
+                      <strong>Adapted in {adaptedCount}</strong> · headline preserved. Review the highlighted formats before approving.
                     </div>
                     <div style={{display:"flex",gap:7,marginTop:9,alignItems:"center"}}>
                       <button onClick={confirmAdaptations}
