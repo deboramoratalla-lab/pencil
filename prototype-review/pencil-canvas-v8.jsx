@@ -270,6 +270,7 @@ export default function PencilCanvas(){
   const [hasFine,setHasFine]=useState(false);
   const [ov,setOv]=useState({}); const [unrev,setUnrev]=useState({});
   const [sel,setSel]=useState(null); const [subset,setSubset]=useState([]);
+  const [scopeMode,setScopeMode]=useState("all");
   const [approved,setApproved]=useState({});
   const [adapted,setAdapted]=useState(false);
   const [adaptedCount,setAdaptedCount]=useState(0);
@@ -351,18 +352,26 @@ export default function PencilCanvas(){
   const pick=(el,fid,shift)=>{
     setDemo(false); setPin(false);
     if(shift&&sel===el){setSubset(s=>s.includes(fid)?s.filter(i=>i!==fid):s.concat(fid));return;}
-    setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
+    setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setScopeMode(ov[el]?.[fid]!==undefined?"local":"all");setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
+  };
+  const chooseScope=mode=>{
+    setScopeMode(mode);
+    if(mode==="all") setSubset([]);
+    else if(mode==="vertical") setSubset(placed.filter(f=>f.fam==="portrait").map(f=>f.id));
+    else if(mode==="local"&&anchor) setSubset([anchor]);
+    setAdapted(false);setFocus(null);
   };
   const runWalkthrough=()=>{
     clearTimeout(walkTimer.current);
     const vertical=placed.filter(f=>f.fam==="portrait").map(f=>f.id);
     const steps=[
-      ["1 / 6 · Select any element to edit across formats",()=>{setDemo(true);setSel(null);setSubset([]);setFocus(null);setPin(false);}],
-      ["2 / 6 · Headline selected · shared across formats",()=>{setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setFocus(null);}],
-      ["3 / 6 · Edit once · formats update together",()=>{setContent(c=>({...c,headline:"Discover beautiful shiny hair powered by nourishing argan oil"}));setFmtAdapted({});setTyping(false);}],
-      ["4 / 6 · One format diverges · local constraint detected",()=>{setFocus(vertical);setPin(true);setUnrev(u=>{const n={...u};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});}],
-      ["5 / 6 · AI recommends a layout adaptation",()=>{setAdapted(true);setAdaptedIds(vertical);setAdaptedCount(vertical.length);setFmtAdapted(m=>{const n={...m};vertical.forEach(id=>n[id]=.82);return n;});}],
-      ["6 / 6 · Approve the adaptation · format returns to green",()=>{setApproved(a=>{const n={...a};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});setUnrev(u=>{const n={...u};vertical.forEach(id=>delete n[`${id}:headline`]);return n;});setAdapted(false);setNotice(null);setPin(false);setFocus(null);}],
+      ["1 / 7 · Select any element to edit across formats",()=>{setDemo(true);setSel(null);setSubset([]);setScopeMode("all");setFocus(null);setPin(false);}],
+      ["2 / 7 · Headline selected · shared across formats",()=>{setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setScopeMode("all");setFocus(null);}],
+      ["3 / 7 · Choose a 9:16 group · keep other ratios independent",()=>{setScopeMode("vertical");setSubset(vertical);setFocus(vertical);setPin(true);}],
+      ["4 / 7 · Edit once · only the 9:16 group updates",()=>{setOv(o=>{const n={...(o.headline||{})};vertical.forEach(id=>n[id]="Discover beautiful shiny hair");return {...o,headline:n};});setFmtAdapted({});setTyping(false);}],
+      ["5 / 7 · One group diverges · local constraint detected",()=>{setFocus(vertical);setPin(true);setUnrev(u=>{const n={...u};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});}],
+      ["6 / 7 · AI recommends a layout adaptation",()=>{setAdapted(true);setAdaptedIds(vertical);setAdaptedCount(vertical.length);setFmtAdapted(m=>{const n={...m};vertical.forEach(id=>n[id]=.82);return n;});}],
+      ["7 / 7 · Approve the adaptation · group returns to green",()=>{setApproved(a=>{const n={...a};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});setUnrev(u=>{const n={...u};vertical.forEach(id=>delete n[`${id}:headline`]);return n;});setAdapted(false);setNotice(null);setPin(false);setFocus(null);}],
     ];
     setAudit(false);setFmtMenu(false);setPanelMenu(false);setZoomMenu(false);
     let i=0; const advance=()=>{if(i>=steps.length){setNotice(null);return;}const [msg,fn]=steps[i++];fn();setNotice(msg);walkTimer.current=setTimeout(advance,i===steps.length?2600:1500);};
@@ -549,7 +558,14 @@ export default function PencilCanvas(){
     const k=Math.max(.05,Math.min(2,(el.clientWidth-60)/width,(el.clientHeight-80)/height));
     setView({k,x:(el.clientWidth-width*k)/2-left*k,y:(el.clientHeight-height*k)/2-top*k});
     setFocus(ids);setPin(true);setAudit(false);
-    if(element){setSel(element);setAnchor(ids[0]);setSubset(ids.length===1&&ov[element]?.[ids[0]]!==undefined?ids:[]);setAdapted(false);}
+    if(element){
+      setSel(element);
+      setAnchor(ids[0]);
+      setSubset(ids);
+      setScopeMode(ids.length===1?"local":"selection");
+      setAdapted(false);
+      setTyping(false);
+    }
   };
 
   const fit=useCallback(()=>{
@@ -1017,13 +1033,24 @@ export default function PencilCanvas(){
             <>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 15px",borderBottom:"1px solid #f2f0eb"}}>
                 <div style={{fontWeight:700,fontSize:15}}>{LABEL[sel]}</div>
-                <button onClick={()=>{setSel(null);setSubset([]);clearSpot();}} style={{...ghost,padding:"4px 7px",display:"flex",alignItems:"center"}}>{IcClose}</button>
+                <button onClick={()=>{setSel(null);setSubset([]);setScopeMode("all");clearSpot();}} style={{...ghost,padding:"4px 7px",display:"flex",alignItems:"center"}}>{IcClose}</button>
               </div>
               <div style={{padding:"14px 15px"}}>
                 <div style={{fontSize:11.5,color:"#93908a",fontVariantNumeric:"tabular-nums",marginBottom:9}}>
-                  {subset.length?`Editing ${subset.length} of ${placed.length}`:`Shared · ${targets.length} formats`}
+                  {scopeMode==="vertical"?`9:16 group · ${subset.length} formats`:scopeMode==="local"?"Local · 1 format":scopeMode==="selection"?`Review set · ${subset.length} formats`:`Shared · ${targets.length} formats`}
                   {absent.length>0&&` · absent in ${absent.length}`}
                 </div>
+                <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}} aria-label="Propagation scope">
+                  {[['all','All formats'],['vertical','9:16 group'],['local','This format']].map(([mode,label])=>(
+                    <button key={mode} onClick={()=>chooseScope(mode)} style={{...ghost,padding:"4px 8px",fontSize:10.5,
+                      background:scopeMode===mode?(mode==="vertical"?"#f2edff":"#f3f1ed"):"#fff",
+                      borderColor:scopeMode===mode?(mode==="vertical"?"#d8caff":"#d9d5cd"):"#e6e3dd",
+                      color:scopeMode===mode&&mode==="vertical"?"#6248b8":"#57544d"}}>{label}</button>
+                  ))}
+                </div>
+                {scopeMode==="vertical"&&<div style={{fontSize:10.5,color:"#6b6960",background:"#faf8ff",border:"1px solid #e9e4ff",borderRadius:7,padding:"6px 8px",marginBottom:10,lineHeight:1.35}}>
+                  Changes apply to the 9:16 group only. Other aspect ratios keep their current composition.
+                </div>}
                 {anchor&&placed.find(f=>f.id===anchor)&&(
                   <div style={{fontSize:11,color:divIn.includes(anchor)?"#6a4fe8":"#6f6c63",marginBottom:9}}>
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
@@ -1037,7 +1064,7 @@ export default function PencilCanvas(){
                   </div>
                 )}
                 {(
-                  <input aria-label={`Edit ${LABEL[sel]}`} value={subset.length===1?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
+                  <input aria-label={`Edit ${LABEL[sel]}`} value={subset.length?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
                     style={{width:"100%",border:"1px solid #e0dcd4",borderRadius:9,padding:"9px 11px",
                       fontSize:13.5,boxSizing:"border-box",fontFamily:"inherit",background:"#fcfbf9"}}/>
                 )}
@@ -1058,12 +1085,16 @@ export default function PencilCanvas(){
                   <div style={{marginTop:13,display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
                     <span style={{width:7,height:7,borderRadius:9,background:C.warn,flexShrink:0}}/>
                     <span style={{color:"#3d3b35"}}>{broken.length} of {targets.length} {sel==="cta"?"CTA buttons overflow":sel==="subhead"?"sub-headlines overflow":"headlines overflow"}</span>
-                    <button onMouseEnter={()=>preview(broken.map(f=>f.id))} onMouseLeave={endPreview}
-                      onClick={()=>showFormats(broken.map(f=>f.id),sel)}
-                      style={{...ghost,fontSize:11,padding:"1px 7px",marginLeft:"auto",
-                        background:pin?"#f4f2ff":"#fff",borderColor:pin?"#ddd5ff":"#e6e3dd"}}>
-                      {pin?"showing":"find them"}
-                    </button>
+                    <div style={{display:"flex",gap:5,marginLeft:"auto"}}>
+                      {pin&&<button onClick={()=>{fit();setFocus(null);setPin(false);}}
+                        style={{...ghost,fontSize:10.5,padding:"2px 6px",whiteSpace:"nowrap"}}>Back to all</button>}
+                      <button onMouseEnter={()=>preview(broken.map(f=>f.id))} onMouseLeave={endPreview}
+                        onClick={()=>showFormats(broken.map(f=>f.id),sel)}
+                        style={{...ghost,fontSize:11,padding:"1px 7px",
+                          background:pin?"#f4f2ff":"#fff",borderColor:pin?"#ddd5ff":"#e6e3dd"}}>
+                        {pin?"showing":"find them"}
+                      </button>
+                    </div>
                   </div>
                 )}
 
