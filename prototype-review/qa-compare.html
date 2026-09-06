@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pencil prototype QA comparison</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #eceae6; font: 12px Inter, system-ui, sans-serif; color: #191915; }
+      main { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
+      figure { margin: 0; background: white; min-width: 0; }
+      figcaption { height: 38px; padding: 12px 16px; font-weight: 700; letter-spacing: .08em; }
+      img { display: block; width: 100%; height: auto; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <figure><figcaption>BEFORE — SINGLE STRIP</figcaption><img src="audit-desktop-overview.png" /></figure>
+      <figure><figcaption>AFTER — RATIO FAMILIES</figcaption><img src="qa-overview-v9.png" /></figure>
+      <figure><figcaption>BEFORE — FIXED 20% ADAPTATION</figcaption><img src="audit-adapted-pending.png" /></figure>
+      <figure><figcaption>AFTER — CALCULATED PER FORMAT</figcaption><img src="qa-adapted-composition-v9.png" /></figure>
+    </main>
+  </body>
+</html>
