@@ -381,6 +381,36 @@ function headlineFits(text, px, width, maxLines) {
     }
     return lines <= maxLines;
 }
+function headlineCollidesWithLogo(text, px, width, fam) {
+    if (fam !== "landscape" && fam !== "square")
+        return false;
+    let lines = 1, line = "";
+    for (const word of String(text || "").split(/\s+/)) {
+        const next = line ? `${line} ${word}` : word;
+        if (line && textW(next, px) > width) {
+            lines++;
+            line = word;
+        }
+        else
+            line = next;
+    }
+    return lines >= 3;
+}
+function subheadCollidesWithCta(text, px, width, fam) {
+    if (fam !== "landscape" && fam !== "square")
+        return false;
+    let lines = 1, line = "";
+    for (const word of String(text || "").split(/\s+/)) {
+        const next = line ? `${line} ${word}` : word;
+        if (line && textW(next, px) > width) {
+            lines++;
+            line = word;
+        }
+        else
+            line = next;
+    }
+    return lines >= 3;
+}
 function headlineScale(text, f) {
     const F = FAM[f.fam], width = f.dw * (1 - 2 * F.pad / 100);
     for (let percent = 100; percent >= 50; percent--) {
@@ -514,10 +544,12 @@ function PencilCanvas() {
     const [unrev, setUnrev] = useState({});
     const [sel, setSel] = useState(null);
     const [subset, setSubset] = useState([]);
+    const [approved, setApproved] = useState({});
     const [adapted, setAdapted] = useState(false);
     const [adaptedCount, setAdaptedCount] = useState(0);
     const [adaptedIds, setAdaptedIds] = useState([]);
     const [fmtAdapted, setFmtAdapted] = useState({}); // per-format headline scale, calculated to fit
+    const [fmtSubAdapted, setFmtSubAdapted] = useState({});
     const [fmtCtaAdapted, setFmtCtaAdapted] = useState({});
     const [anchor, setAnchor] = useState(null); // the format the user actually clicked
     const [demo, setDemo] = useState(false); // opening auto-ring
@@ -552,9 +584,9 @@ function PencilCanvas() {
     const instanceCounter = useRef(0);
     const history = useRef({ past: [], future: [] });
     const [, renderHistory] = useState(0);
-    const snapshot = () => ({ formats, content, hasFine, ov, unrev, fmtAdapted, fmtCtaAdapted });
+    const snapshot = () => ({ formats, content, hasFine, ov, unrev, approved, fmtAdapted, fmtSubAdapted, fmtCtaAdapted });
     const checkpoint = (label = "Change") => { history.current.past.push(snapshot()); history.current.future = []; setHistoryLog(l => [...l, { label, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }].slice(-20)); renderHistory(v => v + 1); };
-    const loadSnapshot = s => { setFormats(s.formats); setContent(s.content); setHasFine(s.hasFine); setOv(s.ov); setUnrev(s.unrev); setFmtAdapted(s.fmtAdapted); setFmtCtaAdapted(s.fmtCtaAdapted || {}); setSel(null); setSubset([]); setAdapted(false); setFocus(null); setPin(false); };
+    const loadSnapshot = s => { setFormats(s.formats); setContent(s.content); setHasFine(s.hasFine); setOv(s.ov); setUnrev(s.unrev); setApproved(s.approved || {}); setFmtAdapted(s.fmtAdapted); setFmtSubAdapted(s.fmtSubAdapted || {}); setFmtCtaAdapted(s.fmtCtaAdapted || {}); setSel(null); setSubset([]); setAdapted(false); setFocus(null); setPin(false); };
     const undo = () => { const h = history.current; if (!h.past.length)
         return; h.future.push(snapshot()); loadSnapshot(h.past.pop()); renderHistory(v => v + 1); };
     const redo = () => { const h = history.current; if (!h.future.length)
@@ -571,13 +603,17 @@ function PencilCanvas() {
             const scale = fmtCtaAdapted[f.id] || 1, pad = f.dw * FAM[f.fam].pad / 100;
             return textW(valIn(el, f.id), f.dw * .042 * scale) + pad * 2 > f.dw * (1 - 2 * FAM[f.fam].pad / 100);
         }
+        if (el === "subhead") {
+            const F = FAM[f.fam], W = f.dw, px = W * .042 * (fmtSubAdapted[f.id] || 1), avail = W * (1 - 2 * F.pad / 100);
+            return !headlineFits(valIn(el, f.id), px, avail, Math.max(2, F.lines)) || subheadCollidesWithCta(valIn(el, f.id), px, avail, f.fam);
+        }
         if (el !== "headline")
             return false;
         const F = FAM[f.fam], W = f.dw;
         const px = W * F.head * (fmtAdapted[f.id] || 1);
         const avail = W * (1 - 2 * F.pad / 100);
-        return !headlineFits(valIn(el, f.id), px, avail, F.lines);
-    }, [valIn, fmtAdapted, fmtCtaAdapted, carries]);
+        return !headlineFits(valIn(el, f.id), px, avail, F.lines) || headlineCollidesWithLogo(valIn(el, f.id), px, avail, f.fam);
+    }, [valIn, fmtAdapted, fmtSubAdapted, fmtCtaAdapted, carries]);
     const elementScale = (el, f) => el === "cta" ? (fmtCtaAdapted[f.id] || 1) : (fmtAdapted[f.id] || 1);
     /* Hover shows a spotlight while the pointer is there. A click keeps it until
        the user says otherwise. Previously the leave handler undid the click. */
@@ -655,8 +691,10 @@ function PencilCanvas() {
             return;
         }
         checkpoint();
+        setApproved({});
         setAdapted(false);
         setFmtAdapted({});
+        setFmtSubAdapted({});
         setFmtCtaAdapted({});
         setTyping(true);
         clearTimeout(typingTimer.current);
@@ -677,6 +715,8 @@ function PencilCanvas() {
         showFormats(ids);
         if (sel === "cta")
             setFmtCtaAdapted(m => { const n = { ...m }; broken.forEach(f => { const F = FAM[f.fam], pad = f.dw * F.pad / 100; const raw = textW(valIn("cta", f.id), f.dw * .042); n[f.id] = Math.max(.5, Math.min(1, ((f.dw * (1 - 2 * F.pad / 100) - pad * 2) / raw) * .82)); }); return n; });
+        else if (sel === "subhead")
+            setFmtSubAdapted(m => { const n = { ...m }; broken.forEach(f => { const F = FAM[f.fam], raw = textW(valIn("subhead", f.id), f.dw * .042), cap = f.dw * (1 - 2 * F.pad / 100); n[f.id] = Math.max(.5, Math.min(1, (cap / raw) * .9)); }); return n; });
         else
             setFmtAdapted(m => { const n = { ...m }; broken.forEach(f => { n[f.id] = headlineScale(valIn("headline", f.id), f); }); return n; });
         setUnrev(u => { const n = { ...u }; broken.forEach(f => { n[`${f.id}:${sel}`] = true; }); return n; });
@@ -722,23 +762,23 @@ function PencilCanvas() {
         } });
         return n;
     });
-    const approveElement = el => setUnrev(u => {
-        const n = { ...u };
-        Object.keys(n).forEach(k => { if (k.endsWith(":" + el)) {
+    const approveElement = el => {
+        setApproved(a => { const n = { ...a }; placed.forEach(f => { if (unrev[`${f.id}:${el}`] && !overflows(el, f))
+            n[`${f.id}:${el}`] = true; }); return n; });
+        setUnrev(u => { const n = { ...u }; Object.keys(n).forEach(k => { if (k.endsWith(":" + el)) {
             const f = placed.find(p => p.id === k.split(":")[0]);
             if (f && !overflows(el, f))
                 delete n[k];
-        } });
-        return n;
-    });
+        } }); return n; });
+    };
     const confirmAdaptations = () => {
-        if (adaptedIds.some(fid => { const f = placed.find(p => p.id === fid); return f && overflows("headline", f); }))
+        if (adaptedIds.some(fid => { const f = placed.find(p => p.id === fid); return f && overflows(sel || "headline", f); }))
             return;
         checkpoint("Approve adaptations");
+        setApproved(a => { const n = { ...a }; adaptedIds.forEach(fid => { n[`${fid}:headline`] = true; }); return n; });
         setUnrev(u => { const n = { ...u }; adaptedIds.forEach(fid => delete n[`${fid}:headline`]); return n; });
         clearSpot();
         setAdapted(false);
-        setSel(null);
         setSubset([]);
         setNotice(`${adaptedCount} adaptations approved`);
         clearTimeout(noticeTimer.current);
@@ -896,6 +936,7 @@ function PencilCanvas() {
     const approveAll = () => {
         checkpoint("Approve all reviewed changes");
         const count = reviewCount;
+        setApproved(a => { const n = { ...a }; Object.keys(unrev).forEach(k => { n[k] = true; }); return n; });
         setUnrev({});
         setAdapted(false);
         setAdaptedIds([]);
@@ -1015,11 +1056,14 @@ function PencilCanvas() {
                         const elState = (!sel || isAbs) ? null
                             : (ov[sel] && ov[sel][f.id] !== undefined) ? "unlinked"
                                 : unrev[`${f.id}:${sel}`] ? "review"
-                                    : "linked";
+                                    : approved[`${f.id}:${sel}`] ? "approved"
+                                        : "linked";
                         const isBrk = sel && !isAbs && overflows(sel, f);
                         const isDiv = sel && ov[sel] && ov[sel][f.id] !== undefined;
-                        const hasUnrev = els.some(e => unrev[`${f.id}:${e}`]);
-                        const hasLayoutIssue = overflows("headline", f);
+                        const hasUnrev = !!(sel && unrev[`${f.id}:${sel}`]);
+                        const hasApproved = !!(sel && approved[`${f.id}:${sel}`]);
+                        const hasAdaptedPending = !!(sel && adapted && adaptedIds.includes(f.id));
+                        const hasLayoutIssue = els.some(el => overflows(el, f));
                         const dim = spotlight && !spotlight.includes(f.id);
                         return (React.createElement("div", { key: f.id, style: { position: "absolute", left: f.x, top: f.y,
                                 opacity: dim ? .3 : (isAbs ? .42 : 1), transition: "opacity .16s" } },
@@ -1028,10 +1072,14 @@ function PencilCanvas() {
                                 f.platform,
                                 " \u00B7 ",
                                 f.name),
-                            React.createElement(Ad, { fmt: f, els: els, valIn: valIn, carries: carries, sel: sel, isAbs: isAbs, isBrk: isBrk, isDiv: isDiv, adapted: fmtAdapted[f.id] || 1, ctaAdapted: fmtCtaAdapted[f.id] || 1, elState: elState, isAnchor: f.id === anchor, demoRing: demo && !sel ? "headline" : null, showRing: true, onPick: (el, e) => { e.stopPropagation(); if (!moved.current)
+                            React.createElement(Ad, { fmt: f, els: els, valIn: valIn, carries: carries, sel: sel, isAbs: isAbs, isBrk: isBrk, isDiv: isDiv, adapted: fmtAdapted[f.id] || 1, subAdapted: fmtSubAdapted[f.id] || 1, ctaAdapted: fmtCtaAdapted[f.id] || 1, elState: elState, isAnchor: f.id === anchor, demoRing: demo && !sel ? "headline" : null, showRing: true, onPick: (el, e) => { e.stopPropagation(); if (!moved.current)
                                     pick(el, f.id, e.shiftKey); } }),
-                            (hasUnrev || hasLayoutIssue) && (React.createElement("button", { "aria-label": hasLayoutIssue ? "Headline needs attention" : "Review this format", onMouseDown: e => e.stopPropagation(), onClick: e => { e.stopPropagation(); showFormats([f.id], hasLayoutIssue ? "headline" : els.find(el => unrev[`${f.id}:${el}`])); }, title: hasLayoutIssue ? "Headline needs attention" : "Review this format", style: { position: "absolute", top: f.dh + 7, left: 2, width: 9, height: 9, border: 0, borderRadius: 99,
-                                    background: hasLayoutIssue ? C.warn : REV.bg, cursor: "pointer", padding: 0, boxShadow: "0 0 0 2px rgba(255,255,255,.82)" } }))));
+                            (hasUnrev || hasLayoutIssue || hasApproved || hasAdaptedPending) && (React.createElement("button", { "aria-label": hasApproved && !hasUnrev && !hasLayoutIssue ? "Approved" : hasAdaptedPending ? "Adaptation pending" : "Review this format", onMouseDown: e => e.stopPropagation(), onClick: e => { e.stopPropagation(); if (hasApproved && !hasUnrev && !hasLayoutIssue) {
+                                    pick(els.find(el => approved[`${f.id}:${el}`]) || "headline", f.id, false);
+                                }
+                                else
+                                    showFormats([f.id], hasLayoutIssue ? (els.find(el => overflows(el, f)) || "headline") : sel); }, title: hasApproved && !hasUnrev && !hasLayoutIssue ? "Approved" : hasAdaptedPending ? "Adaptation pending" : hasLayoutIssue ? "Text needs attention" : "Review this format", style: { position: "absolute", top: f.dh + 7, left: 2, width: 9, height: 9, border: 0, borderRadius: 99,
+                                    background: hasApproved && !hasUnrev && !hasLayoutIssue ? "#41a66a" : hasAdaptedPending ? "#7c5cff" : hasLayoutIssue ? C.warn : REV.bg, cursor: "pointer", padding: 0, boxShadow: "0 0 0 2px rgba(255,255,255,.82)" } }))));
                     })),
                 demo && (React.createElement("div", { style: { position: "absolute", left: "50%", bottom: 20, transform: "translateX(-50%)",
                         background: "#0C0B02", color: "#fff", fontSize: 12.5, padding: "9px 16px", borderRadius: 100,
@@ -1227,6 +1275,10 @@ function PencilCanvas() {
                         placed.find(f => f.id === anchor).platform,
                         " \u00B7 ",
                         divIn.includes(anchor) ? "Local override" : "Shared source")),
+                    React.createElement("div", { style: { fontSize: 10.5, color: "#9a968d", marginBottom: 10 } }, "Native editing tools available per format"),
+                    sel && anchor && approved[`${anchor}:${sel}`] && (React.createElement("div", { style: { fontSize: 11.5, color: "#2f8a54", background: "#edf8f0", border: "1px solid #bfe5c9", borderRadius: 8, padding: "7px 9px", marginBottom: 10 } },
+                        React.createElement("span", { style: { display: "inline-block", width: 7, height: 7, borderRadius: 9, background: "#41a66a", marginRight: 7 } }),
+                        "Approved \u00B7 change applied")),
                     (React.createElement("input", { "aria-label": `Edit ${LABEL[sel]}`, value: subset.length === 1 ? valIn(sel, subset[0]) : content[sel], onChange: e => edit(e.target.value), style: { width: "100%", border: "1px solid #e0dcd4", borderRadius: 9, padding: "9px 11px",
                             fontSize: 13.5, boxSizing: "border-box", fontFamily: "inherit", background: "#fcfbf9" } })),
                     anchor && !divIn.includes(anchor) && (React.createElement("button", { onClick: () => diverge(anchor), style: { ...ghost, marginTop: 9, width: "100%" } }, "Unlink this format")),
@@ -1237,15 +1289,15 @@ function PencilCanvas() {
                             "Unlinked in ",
                             divIn.length),
                         React.createElement("button", { onClick: restore, style: { ...ghost, fontSize: 11, padding: "2px 8px", marginLeft: "auto" } }, "Relink all"))),
-                    (sel === "headline" || sel === "cta") && broken.length > 0 && (React.createElement("div", { style: { marginTop: 13, display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 } },
+                    (sel === "headline" || sel === "subhead" || sel === "cta") && broken.length > 0 && (React.createElement("div", { style: { marginTop: 13, display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 } },
                         React.createElement("span", { style: { width: 7, height: 7, borderRadius: 9, background: C.warn, flexShrink: 0 } }),
                         React.createElement("span", { style: { color: "#3d3b35" } },
                             broken.length,
                             " of ",
                             targets.length,
                             " ",
-                            sel === "cta" ? "CTA buttons overflow" : "headlines overflow"),
-                        React.createElement("button", { onMouseEnter: () => preview(broken.map(f => f.id)), onMouseLeave: endPreview, onClick: () => showFormats(broken.map(f => f.id), "headline"), style: { ...ghost, fontSize: 11, padding: "1px 7px", marginLeft: "auto",
+                            sel === "cta" ? "CTA buttons overflow" : sel === "subhead" ? "sub-headlines overflow" : "headlines overflow"),
+                        React.createElement("button", { onMouseEnter: () => preview(broken.map(f => f.id)), onMouseLeave: endPreview, onClick: () => showFormats(broken.map(f => f.id), sel), style: { ...ghost, fontSize: 11, padding: "1px 7px", marginLeft: "auto",
                                 background: pin ? "#f4f2ff" : "#fff", borderColor: pin ? "#ddd5ff" : "#e6e3dd" } }, pin ? "showing" : "find them"))),
                     sel === "fineprint" && (React.createElement("div", { style: { marginTop: 13, fontSize: 12.5, color: "#6b6960", lineHeight: 1.5 } },
                         "Placed in ",
@@ -1263,25 +1315,37 @@ function PencilCanvas() {
                                     "Review ",
                                     idsFor("fineprint", "ur").length),
                                 React.createElement("button", { onClick: () => { approveElement("fineprint"); setNotice(`Fineprint approved in ${targets.length}`); clearTimeout(noticeTimer.current); noticeTimer.current = setTimeout(() => setNotice(null), 2200); }, style: { ...primary, flex: 1, fontSize: 11.5, padding: "5px 7px" } }, "Approve all")))))),
-                    (sel === "headline" || sel === "cta") && broken.length > 0 && !typing && (React.createElement("div", { style: { marginTop: 13, background: "#f7f5ff", border: "1px solid #e9e4ff", borderRadius: 10, padding: 11 } },
+                    sel && sel !== "fineprint" && broken.length > 0 && sel !== "headline" && sel !== "subhead" && sel !== "cta" && (React.createElement("div", { style: { marginTop: 13, background: "#fff8e8", border: "1px solid #e8c578", borderRadius: 10, padding: 11 } },
+                        React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#8a641b", marginBottom: 5, letterSpacing: ".05em" } }, "NEEDS REVIEW"),
+                        React.createElement("div", { style: { fontSize: 12, color: "#5d4b27", lineHeight: 1.45 } },
+                            LABEL[sel],
+                            " overflows in ",
+                            broken.length,
+                            " ",
+                            broken.length === 1 ? "format" : "formats",
+                            ". Review the affected composition before continuing."),
+                        React.createElement("button", { onClick: () => showFormats(broken.map(f => f.id), sel), style: { ...ghost, marginTop: 10, fontSize: 11.5 } },
+                            "Review ",
+                            broken.length))),
+                    (sel === "headline" || sel === "subhead" || sel === "cta") && broken.length > 0 && !typing && (React.createElement("div", { style: { marginTop: 13, background: "#f7f5ff", border: "1px solid #e9e4ff", borderRadius: 10, padding: 11 } },
                         React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#191915", marginBottom: 5, letterSpacing: ".05em",
                                 display: "flex", alignItems: "center", gap: 5 } },
                             React.createElement(AiIcon, { size: 13 }),
                             " PENCIL AI"),
-                        React.createElement("div", { style: { fontSize: 12, color: "#4a4840", lineHeight: 1.45 } }, `The ${sel === "cta" ? "CTA" : "headline"} is too large in ${broken.length} formats. I can resize it there and leave the shared copy unchanged.`),
+                        React.createElement("div", { style: { fontSize: 12, color: "#4a4840", lineHeight: 1.45 } }, `The ${LABEL[sel].toLowerCase()} is too large and conflicts with the local composition in ${broken.length} formats. I can adapt the layout there and leave the shared copy unchanged.`),
                         React.createElement("div", { style: { display: "flex", gap: 7, marginTop: 10 } },
-                            React.createElement("button", { onClick: adapt, style: primary },
+                            React.createElement("button", { onClick: adapt, style: primary, title: "Apply recommended layout adaptation" },
                                 React.createElement(AiIcon, { size: 13 }),
                                 " Improve ",
                                 broken.length),
-                            React.createElement("button", { onClick: () => { setSel(null); clearSpot(); }, style: ghost }, "Review later")))),
+                            React.createElement("button", { onClick: () => { setSel(null); clearSpot(); }, style: ghost }, "Edit manually")))),
                     adapted && broken.length === 0 && (React.createElement("div", { style: { marginTop: 12, background: "#f5f1ff", border: "1px solid #d9ccff",
                             borderRadius: 10, padding: 11 } },
                         React.createElement("div", { style: { fontSize: 12, color: "#5c43b6", lineHeight: 1.45 } },
                             React.createElement("strong", null,
-                                "Adapted in ",
+                                "Layout adapted in ",
                                 adaptedCount),
-                            " \u00B7 headline preserved. Review the highlighted formats before approving."),
+                            " \u00B7 shared copy preserved. Review the highlighted formats before approving."),
                         React.createElement("div", { style: { display: "flex", gap: 7, marginTop: 9, alignItems: "center" } },
                             React.createElement("button", { onClick: confirmAdaptations, style: primary },
                                 "Approve ",
@@ -1331,7 +1395,7 @@ function Thumb({ f, els, valIn, carries, adapted, flagged, box = 38 }) {
             React.createElement("div", { style: { width: f.dw, height: f.dh, transform: `scale(${k})`, transformOrigin: "0 0" } },
                 React.createElement(Ad, { fmt: f, els: els, valIn: valIn, carries: carries, sel: null, isAbs: false, isBrk: false, isDiv: false, adapted: adapted, ctaAdapted: 1, showRing: false, onPick: () => { } })))));
 }
-function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, ctaAdapted = 1, elState, isAnchor, demoRing, showRing = true, onPick }) {
+function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, subAdapted = 1, ctaAdapted = 1, elState, isAnchor, demoRing, showRing = true, onPick }) {
     const F = FAM[fmt.fam], W = fmt.dw;
     /* One ring, four readings:
          thick solid violet — the placement you are actually editing
@@ -1345,10 +1409,10 @@ function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, ctaAd
                 outlineOffset: W * .006, borderRadius: W * .008, opacity: .85 };
         if (sel !== k || isAbs || !showRing)
             return {};
-        const st = (elState === "unlinked" || isDiv) ? "unlinked" : elState === "review" ? "review" : "linked";
+        const st = (elState === "unlinked" || isDiv) ? "unlinked" : elState === "review" ? "review" : elState === "approved" ? "approved" : "linked";
         const w = Math.max(1.1, W * (isAnchor ? .007 : .0045));
         return {
-            outline: `${w}px ${st === "unlinked" ? "dashed" : "solid"} ${st === "review" ? C.warn : C.unlinked}`,
+            outline: `${w}px ${st === "unlinked" ? "dashed" : "solid"} ${st === "review" ? C.warn : st === "approved" ? "#41a66a" : C.unlinked}`,
             outlineOffset: W * .006, borderRadius: W * .008
         };
     };
@@ -1374,7 +1438,7 @@ function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, ctaAd
                     fontSize: head, lineHeight: 1.08, textShadow: "0 1px 3px rgba(0,0,0,.35)", cursor: "pointer",
                     maxWidth: "100%", ...ring("headline") } }, valIn("headline", fmt.id)),
             React.createElement("div", { onClick: e => onPick("subhead", e), style: { color: "#f5e6c4", fontFamily: "Georgia, serif",
-                    fontSize: W * .052, lineHeight: 1.2, textShadow: "0 1px 2px rgba(0,0,0,.3)", cursor: "pointer",
+                    fontSize: W * .052 * (subAdapted || 1), lineHeight: 1.2, textShadow: "0 1px 2px rgba(0,0,0,.3)", cursor: "pointer",
                     maxWidth: "100%", ...ring("subhead") } }, valIn("subhead", fmt.id)),
             !fmt.noCta && (React.createElement("div", { onClick: e => onPick("cta", e), style: { background: "#e3b23c", color: "#2b2011", fontWeight: 700,
                     fontSize: W * .042 * ctaAdapted, letterSpacing: ".05em", padding: `${W * .022 * ctaAdapted}px ${W * .05 * ctaAdapted}px`, borderRadius: W * .008,

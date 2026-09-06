@@ -80,6 +80,24 @@ function headlineFits(text,px,width,maxLines){
   }
   return lines<=maxLines;
 }
+function headlineCollidesWithLogo(text,px,width,fam){
+  if(fam!=="landscape"&&fam!=="square") return false;
+  let lines=1,line="";
+  for(const word of String(text||"").split(/\s+/)){
+    const next=line?`${line} ${word}`:word;
+    if(line&&textW(next,px)>width){lines++;line=word;}else line=next;
+  }
+  return lines>=3;
+}
+function subheadCollidesWithCta(text,px,width,fam){
+  if(fam!=="landscape"&&fam!=="square") return false;
+  let lines=1,line="";
+  for(const word of String(text||"").split(/\s+/)){
+    const next=line?`${line} ${word}`:word;
+    if(line&&textW(next,px)>width){lines++;line=word;}else line=next;
+  }
+  return lines>=3;
+}
 function headlineScale(text,f){
   const F=FAM[f.fam],width=f.dw*(1-2*F.pad/100);
   for(let percent=100;percent>=50;percent--){
@@ -240,10 +258,12 @@ export default function PencilCanvas(){
   const [hasFine,setHasFine]=useState(false);
   const [ov,setOv]=useState({}); const [unrev,setUnrev]=useState({});
   const [sel,setSel]=useState(null); const [subset,setSubset]=useState([]);
+  const [approved,setApproved]=useState({});
   const [adapted,setAdapted]=useState(false);
   const [adaptedCount,setAdaptedCount]=useState(0);
   const [adaptedIds,setAdaptedIds]=useState([]);
   const [fmtAdapted,setFmtAdapted]=useState({});   // per-format headline scale, calculated to fit
+  const [fmtSubAdapted,setFmtSubAdapted]=useState({});
   const [fmtCtaAdapted,setFmtCtaAdapted]=useState({});
   const [anchor,setAnchor]=useState(null);         // the format the user actually clicked
   const [demo,setDemo]=useState(false);            // opening auto-ring
@@ -276,9 +296,9 @@ export default function PencilCanvas(){
   const instanceCounter=useRef(0);
   const history=useRef({past:[],future:[]});
   const [,renderHistory]=useState(0);
-  const snapshot=()=>({formats,content,hasFine,ov,unrev,fmtAdapted,fmtCtaAdapted});
+  const snapshot=()=>({formats,content,hasFine,ov,unrev,approved,fmtAdapted,fmtSubAdapted,fmtCtaAdapted});
   const checkpoint=(label="Change")=>{history.current.past.push(snapshot());history.current.future=[];setHistoryLog(l=>[...l,{label,time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}].slice(-20));renderHistory(v=>v+1);};
-  const loadSnapshot=s=>{setFormats(s.formats);setContent(s.content);setHasFine(s.hasFine);setOv(s.ov);setUnrev(s.unrev);setFmtAdapted(s.fmtAdapted);setFmtCtaAdapted(s.fmtCtaAdapted||{});setSel(null);setSubset([]);setAdapted(false);setFocus(null);setPin(false);};
+  const loadSnapshot=s=>{setFormats(s.formats);setContent(s.content);setHasFine(s.hasFine);setOv(s.ov);setUnrev(s.unrev);setApproved(s.approved||{});setFmtAdapted(s.fmtAdapted);setFmtSubAdapted(s.fmtSubAdapted||{});setFmtCtaAdapted(s.fmtCtaAdapted||{});setSel(null);setSubset([]);setAdapted(false);setFocus(null);setPin(false);};
   const undo=()=>{const h=history.current;if(!h.past.length)return;h.future.push(snapshot());loadSnapshot(h.past.pop());renderHistory(v=>v+1);};
   const redo=()=>{const h=history.current;if(!h.future.length)return;h.past.push(snapshot());loadSnapshot(h.future.pop());renderHistory(v=>v+1);};
 
@@ -294,12 +314,16 @@ export default function PencilCanvas(){
       const scale=fmtCtaAdapted[f.id]||1, pad=f.dw*FAM[f.fam].pad/100;
       return textW(valIn(el,f.id),f.dw*.042*scale)+pad*2 > f.dw*(1-2*FAM[f.fam].pad/100);
     }
+    if(el==="subhead"){
+      const F=FAM[f.fam], W=f.dw, px=W*.042*(fmtSubAdapted[f.id]||1), avail=W*(1-2*F.pad/100);
+      return !headlineFits(valIn(el,f.id),px,avail,Math.max(2,F.lines))||subheadCollidesWithCta(valIn(el,f.id),px,avail,f.fam);
+    }
     if(el!=="headline") return false;
     const F=FAM[f.fam], W=f.dw;
     const px=W*F.head*(fmtAdapted[f.id]||1);
     const avail=W*(1-2*F.pad/100);
-    return !headlineFits(valIn(el,f.id),px,avail,F.lines);
-  },[valIn,fmtAdapted,fmtCtaAdapted,carries]);
+    return !headlineFits(valIn(el,f.id),px,avail,F.lines)||headlineCollidesWithLogo(valIn(el,f.id),px,avail,f.fam);
+  },[valIn,fmtAdapted,fmtSubAdapted,fmtCtaAdapted,carries]);
   const elementScale=(el,f)=>el==="cta"?(fmtCtaAdapted[f.id]||1):(fmtAdapted[f.id]||1);
 
   /* Hover shows a spotlight while the pointer is there. A click keeps it until
@@ -351,8 +375,9 @@ export default function PencilCanvas(){
       setNotice("Add some copy before applying the change");clearTimeout(noticeTimer.current);noticeTimer.current=setTimeout(()=>setNotice(null),2200);return;
     }
     checkpoint();
+    setApproved({});
     setAdapted(false);
-    setFmtAdapted({});setFmtCtaAdapted({});
+    setFmtAdapted({});setFmtSubAdapted({});setFmtCtaAdapted({});
     setTyping(true);
     clearTimeout(typingTimer.current);
     typingTimer.current=setTimeout(()=>setTyping(false),650);
@@ -367,6 +392,7 @@ export default function PencilCanvas(){
     setAdapted(true);setAdaptedCount(ids.length);setAdaptedIds(ids);
     showFormats(ids);
     if(sel==="cta") setFmtCtaAdapted(m=>{const n={...m};broken.forEach(f=>{const F=FAM[f.fam],pad=f.dw*F.pad/100;const raw=textW(valIn("cta",f.id),f.dw*.042);n[f.id]=Math.max(.5,Math.min(1,((f.dw*(1-2*F.pad/100)-pad*2)/raw)*.82));});return n;});
+    else if(sel==="subhead") setFmtSubAdapted(m=>{const n={...m};broken.forEach(f=>{const F=FAM[f.fam],raw=textW(valIn("subhead",f.id),f.dw*.042),cap=f.dw*(1-2*F.pad/100);n[f.id]=Math.max(.5,Math.min(1,(cap/raw)*.9));});return n;});
     else setFmtAdapted(m=>{const n={...m};broken.forEach(f=>{n[f.id]=headlineScale(valIn("headline",f.id),f);});return n;});
     setUnrev(u=>{const n={...u};broken.forEach(f=>{n[`${f.id}:${sel}`]=true;});return n;});};
   /* the per-format retry that ships today, two steps deep — surfaced on the row */
@@ -393,13 +419,16 @@ export default function PencilCanvas(){
   };
   const approveFormat=fid=>setUnrev(u=>{
     const n={...u}; Object.keys(n).forEach(k=>{ if(k.startsWith(fid+":")){const f=placed.find(p=>p.id===fid);if(f&&!overflows(k.split(":")[1],f))delete n[k];} }); return n;});
-  const approveElement=el=>setUnrev(u=>{
-    const n={...u}; Object.keys(n).forEach(k=>{ if(k.endsWith(":"+el)){const f=placed.find(p=>p.id===k.split(":")[0]);if(f&&!overflows(el,f))delete n[k];} }); return n;});
+  const approveElement=el=>{
+    setApproved(a=>{const n={...a};placed.forEach(f=>{if(unrev[`${f.id}:${el}`]&&!overflows(el,f))n[`${f.id}:${el}`]=true;});return n;});
+    setUnrev(u=>{const n={...u}; Object.keys(n).forEach(k=>{ if(k.endsWith(":"+el)){const f=placed.find(p=>p.id===k.split(":")[0]);if(f&&!overflows(el,f))delete n[k];} }); return n;});
+  };
   const confirmAdaptations=()=>{
-    if(adaptedIds.some(fid=>{const f=placed.find(p=>p.id===fid);return f&&overflows("headline",f);}))return;
+    if(adaptedIds.some(fid=>{const f=placed.find(p=>p.id===fid);return f&&overflows(sel||"headline",f);}))return;
     checkpoint("Approve adaptations");
+    setApproved(a=>{const n={...a};adaptedIds.forEach(fid=>{n[`${fid}:headline`]=true;});return n;});
     setUnrev(u=>{const n={...u};adaptedIds.forEach(fid=>delete n[`${fid}:headline`]);return n;});
-    clearSpot();setAdapted(false);setSel(null);setSubset([]);
+    clearSpot();setAdapted(false);setSubset([]);
     setNotice(`${adaptedCount} adaptations approved`);
     clearTimeout(noticeTimer.current);noticeTimer.current=setTimeout(()=>setNotice(null),2200);
   };
@@ -513,6 +542,7 @@ export default function PencilCanvas(){
   const approveAll=()=>{
     checkpoint("Approve all reviewed changes");
     const count=reviewCount;
+    setApproved(a=>{const n={...a};Object.keys(unrev).forEach(k=>{n[k]=true;});return n;});
     setUnrev({});setAdapted(false);setAdaptedIds([]);setSel(null);setSubset([]);clearSpot();
     setNotice(`${count} changes approved`);clearTimeout(noticeTimer.current);noticeTimer.current=setTimeout(()=>setNotice(null),2200);
   };
@@ -654,11 +684,14 @@ export default function PencilCanvas(){
               const elState = (!sel||isAbs) ? null
                 : (ov[sel]&&ov[sel][f.id]!==undefined) ? "unlinked"
                 : unrev[`${f.id}:${sel}`]              ? "review"
+                : approved[`${f.id}:${sel}`]            ? "approved"
                 : "linked";
               const isBrk=sel&&!isAbs&&overflows(sel,f);
               const isDiv=sel&&ov[sel]&&ov[sel][f.id]!==undefined;
-              const hasUnrev=els.some(e=>unrev[`${f.id}:${e}`]);
-              const hasLayoutIssue=overflows("headline",f);
+              const hasUnrev=!!(sel&&unrev[`${f.id}:${sel}`]);
+              const hasApproved=!!(sel&&approved[`${f.id}:${sel}`]);
+              const hasAdaptedPending=!!(sel&&adapted&&adaptedIds.includes(f.id));
+              const hasLayoutIssue=els.some(el=>overflows(el,f));
               const dim=spotlight&&!spotlight.includes(f.id);
               return (
                 <div key={f.id} style={{position:"absolute",left:f.x,top:f.y,
@@ -667,19 +700,19 @@ export default function PencilCanvas(){
                     whiteSpace:"nowrap",fontVariantNumeric:"tabular-nums"}}>{f.platform} · {f.name}</div>
 
                   <Ad fmt={f} els={els} valIn={valIn} carries={carries} sel={sel} isAbs={isAbs}
-                    isBrk={isBrk} isDiv={isDiv} adapted={fmtAdapted[f.id]||1} ctaAdapted={fmtCtaAdapted[f.id]||1}
+                    isBrk={isBrk} isDiv={isDiv} adapted={fmtAdapted[f.id]||1} subAdapted={fmtSubAdapted[f.id]||1} ctaAdapted={fmtCtaAdapted[f.id]||1}
                     elState={elState} isAnchor={f.id===anchor}
                     demoRing={demo&&!sel?"headline":null}
                     showRing={true}
                     onPick={(el,e)=>{e.stopPropagation();if(!moved.current)pick(el,f.id,e.shiftKey);}}/>
 
                   {/* tier 2 — ambient. a dot. no text, ever. */}
-                  {(hasUnrev||hasLayoutIssue)&&(
-                    <button aria-label={hasLayoutIssue?"Headline needs attention":"Review this format"}
-                      onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();showFormats([f.id],hasLayoutIssue?"headline":els.find(el=>unrev[`${f.id}:${el}`]));}}
-                      title={hasLayoutIssue?"Headline needs attention":"Review this format"}
+                  {(hasUnrev||hasLayoutIssue||hasApproved||hasAdaptedPending)&&(
+                    <button aria-label={hasApproved&&!hasUnrev&&!hasLayoutIssue?"Approved":hasAdaptedPending?"Adaptation pending":"Review this format"}
+                      onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();if(hasApproved&&!hasUnrev&&!hasLayoutIssue){pick(els.find(el=>approved[`${f.id}:${el}`])||"headline",f.id,false);}else showFormats([f.id],hasLayoutIssue?(els.find(el=>overflows(el,f))||"headline"):sel);}}
+                      title={hasApproved&&!hasUnrev&&!hasLayoutIssue?"Approved":hasAdaptedPending?"Adaptation pending":hasLayoutIssue?"Text needs attention":"Review this format"}
                       style={{position:"absolute",top:f.dh+7,left:2,width:9,height:9,border:0,borderRadius:99,
-                        background:hasLayoutIssue?C.warn:REV.bg,cursor:"pointer",padding:0,boxShadow:"0 0 0 2px rgba(255,255,255,.82)"}}/>
+                        background:hasApproved&&!hasUnrev&&!hasLayoutIssue?"#41a66a":hasAdaptedPending?"#7c5cff":hasLayoutIssue?C.warn:REV.bg,cursor:"pointer",padding:0,boxShadow:"0 0 0 2px rgba(255,255,255,.82)"}}/>
                   )}
                 </div>
               );
@@ -975,6 +1008,13 @@ export default function PencilCanvas(){
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
                   </div>
                 )}
+                <div style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native editing tools available per format</div>
+                {sel&&anchor&&approved[`${anchor}:${sel}`]&&(
+                  <div style={{fontSize:11.5,color:"#2f8a54",background:"#edf8f0",border:"1px solid #bfe5c9",borderRadius:8,padding:"7px 9px",marginBottom:10}}>
+                    <span style={{display:"inline-block",width:7,height:7,borderRadius:9,background:"#41a66a",marginRight:7}}/>
+                    Approved · change applied
+                  </div>
+                )}
                 {(
                   <input aria-label={`Edit ${LABEL[sel]}`} value={subset.length===1?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
                     style={{width:"100%",border:"1px solid #e0dcd4",borderRadius:9,padding:"9px 11px",
@@ -993,12 +1033,12 @@ export default function PencilCanvas(){
                 )}
 
                 {/* the count lives here and nowhere else */}
-                {(sel==="headline"||sel==="cta")&&broken.length>0&&(
+                {(sel==="headline"||sel==="subhead"||sel==="cta")&&broken.length>0&&(
                   <div style={{marginTop:13,display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
                     <span style={{width:7,height:7,borderRadius:9,background:C.warn,flexShrink:0}}/>
-                    <span style={{color:"#3d3b35"}}>{broken.length} of {targets.length} {sel==="cta"?"CTA buttons overflow":"headlines overflow"}</span>
+                    <span style={{color:"#3d3b35"}}>{broken.length} of {targets.length} {sel==="cta"?"CTA buttons overflow":sel==="subhead"?"sub-headlines overflow":"headlines overflow"}</span>
                     <button onMouseEnter={()=>preview(broken.map(f=>f.id))} onMouseLeave={endPreview}
-                      onClick={()=>showFormats(broken.map(f=>f.id),"headline")}
+                      onClick={()=>showFormats(broken.map(f=>f.id),sel)}
                       style={{...ghost,fontSize:11,padding:"1px 7px",marginLeft:"auto",
                         background:pin?"#f4f2ff":"#fff",borderColor:pin?"#ddd5ff":"#e6e3dd"}}>
                       {pin?"showing":"find them"}
@@ -1021,16 +1061,26 @@ export default function PencilCanvas(){
                   </div>
                 )}
 
-                {(sel==="headline"||sel==="cta")&&broken.length>0&&!typing&&(
+                {sel&&sel!=="fineprint"&&broken.length>0&&sel!=="headline"&&sel!=="subhead"&&sel!=="cta"&&(
+                  <div style={{marginTop:13,background:"#fff8e8",border:"1px solid #e8c578",borderRadius:10,padding:11}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#8a641b",marginBottom:5,letterSpacing:".05em"}}>NEEDS REVIEW</div>
+                    <div style={{fontSize:12,color:"#5d4b27",lineHeight:1.45}}>
+                      {LABEL[sel]} overflows in {broken.length} {broken.length===1?"format":"formats"}. Review the affected composition before continuing.
+                    </div>
+                    <button onClick={()=>showFormats(broken.map(f=>f.id),sel)} style={{...ghost,marginTop:10,fontSize:11.5}}>Review {broken.length}</button>
+                  </div>
+                )}
+
+                {(sel==="headline"||sel==="subhead"||sel==="cta")&&broken.length>0&&!typing&&(
                   <div style={{marginTop:13,background:"#f7f5ff",border:"1px solid #e9e4ff",borderRadius:10,padding:11}}>
                     <div style={{fontSize:10,fontWeight:700,color:"#191915",marginBottom:5,letterSpacing:".05em",
                       display:"flex",alignItems:"center",gap:5}}><AiIcon size={13}/> PENCIL AI</div>
                     <div style={{fontSize:12,color:"#4a4840",lineHeight:1.45}}>
-                      {`The ${sel==="cta"?"CTA":"headline"} is too large in ${broken.length} formats. I can resize it there and leave the shared copy unchanged.`}
+                      {`The ${LABEL[sel].toLowerCase()} is too large and conflicts with the local composition in ${broken.length} formats. I can adapt the layout there and leave the shared copy unchanged.`}
                     </div>
                     <div style={{display:"flex",gap:7,marginTop:10}}>
-                      <button onClick={adapt} style={primary}><AiIcon size={13}/> Improve {broken.length}</button>
-                      <button onClick={()=>{setSel(null);clearSpot();}} style={ghost}>Review later</button>
+                      <button onClick={adapt} style={primary} title="Apply recommended layout adaptation"><AiIcon size={13}/> Improve {broken.length}</button>
+                      <button onClick={()=>{setSel(null);clearSpot();}} style={ghost}>Edit manually</button>
                     </div>
                   </div>
                 )}
@@ -1038,7 +1088,7 @@ export default function PencilCanvas(){
                   <div style={{marginTop:12,background:"#f5f1ff",border:"1px solid #d9ccff",
                     borderRadius:10,padding:11}}>
                     <div style={{fontSize:12,color:"#5c43b6",lineHeight:1.45}}>
-                      <strong>Adapted in {adaptedCount}</strong> · headline preserved. Review the highlighted formats before approving.
+                      <strong>Layout adapted in {adaptedCount}</strong> · shared copy preserved. Review the highlighted formats before approving.
                     </div>
                     <div style={{display:"flex",gap:7,marginTop:9,alignItems:"center"}}>
                       <button onClick={confirmAdaptations}
@@ -1121,7 +1171,7 @@ function Thumb({f,els,valIn,carries,adapted,flagged,box=38}){
   );
 }
 
-function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,ctaAdapted=1,elState,isAnchor,demoRing,showRing=true,onPick}){
+function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,subAdapted=1,ctaAdapted=1,elState,isAnchor,demoRing,showRing=true,onPick}){
   const F=FAM[fmt.fam], W=fmt.dw;
   /* One ring, four readings:
        thick solid violet — the placement you are actually editing
@@ -1134,10 +1184,10 @@ function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,ctaAdapted=1,el
       return {outline:`${Math.max(1,W*.0045)}px solid ${C.unlinked}`,
               outlineOffset:W*.006,borderRadius:W*.008,opacity:.85};
     if(sel!==k||isAbs||!showRing) return {};
-    const st = (elState==="unlinked"||isDiv) ? "unlinked" : elState==="review" ? "review" : "linked";
+    const st = (elState==="unlinked"||isDiv) ? "unlinked" : elState==="review" ? "review" : elState==="approved" ? "approved" : "linked";
     const w  = Math.max(1.1, W*(isAnchor?.007:.0045));
     return {
-      outline:`${w}px ${st==="unlinked"?"dashed":"solid"} ${st==="review"?C.warn:C.unlinked}`,
+      outline:`${w}px ${st==="unlinked"?"dashed":"solid"} ${st==="review"?C.warn:st==="approved"?"#41a66a":C.unlinked}`,
       outlineOffset:W*.006, borderRadius:W*.008
     };
   };
@@ -1180,7 +1230,7 @@ function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,ctaAdapted=1,el
           {valIn("headline",fmt.id)}
         </div>
         <div onClick={e=>onPick("subhead",e)} style={{color:"#f5e6c4",fontFamily:"Georgia, serif",
-          fontSize:W*.052,lineHeight:1.2,textShadow:"0 1px 2px rgba(0,0,0,.3)",cursor:"pointer",
+          fontSize:W*.052*(subAdapted||1),lineHeight:1.2,textShadow:"0 1px 2px rgba(0,0,0,.3)",cursor:"pointer",
           maxWidth:"100%",...ring("subhead")}}>
           {valIn("subhead",fmt.id)}
         </div>
