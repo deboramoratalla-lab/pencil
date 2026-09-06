@@ -87,7 +87,7 @@ function headlineCollidesWithLogo(text,px,width,fam){
     const next=line?`${line} ${word}`:word;
     if(line&&textW(next,px)>width){lines++;line=word;}else line=next;
   }
-  return lines>=3;
+  return lines>=2;
 }
 function subheadCollidesWithCta(text,px,width,fam){
   if(fam!=="landscape"&&fam!=="square") return false;
@@ -186,13 +186,24 @@ const AiIcon=({size=16})=>(
 const IcSparkle=<AiIcon size={16}/>;
 
 
-/* The creative asset. Rendered as one square scene and *sliced* by each
-   format's aspect ratio — the same thing object-fit:cover does to a photo,
-   but with zero network dependency so a live demo can't break. */
-function Scene(){
+const FIGMA_BG="./assets/figma/audit-selected-default-overflow.png";
+const FIGMA_PRODUCT="./assets/figma/15160 [Converted]-02 2.png";
+const FIGMA_LOGO="./assets/figma/Vector.svg";
+
+/* The original challenge assets are used as the visual base; editable copy
+   layers remain above them so the multi-format behavior stays demonstrable. */
+function Scene({fmt}){
+  const productWidth=fmt?.fam==="portrait"?"58%":fmt?.fam==="tall"?"53%":fmt?.fam==="vertical"?"48%":fmt?.fam==="square"?"39%":"24%";
+  const productRight=fmt?.fam==="portrait"?"14%":fmt?.fam==="vertical"?"12%":"10%";
+  const productBottom=fmt?.fam==="portrait"?"20%":fmt?.fam==="tall"?"16%":fmt?.fam==="vertical"?"16%":fmt?.fam==="square"?"16%":"8%";
   return (
-    <svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"
-      style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}}>
+    <>
+    <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>
+      <img src={FIGMA_BG} alt="" draggable={false} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}}/>
+      <img src={FIGMA_PRODUCT} alt="" draggable={false} style={{position:"absolute",right:productRight,bottom:productBottom,width:productWidth,height:"auto",objectFit:"contain"}}/>
+    </div>
+    {false && (
+      <svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}}>
       <defs>
         <linearGradient id="pg-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#241a0d"/>
@@ -248,13 +259,14 @@ function Scene(){
         <rect x="38" y="203" width="50" height="3" rx="1.5" fill="#6b4a18" opacity=".45"/>
         <ellipse cx="62" cy="358" rx="96" ry="16" fill="#1d1206" opacity=".45"/>
       </g>
-    </svg>
+    </svg>)}
+    </>
   );
 }
 
 export default function PencilCanvas(){
   const [formats,setFormats]=useState(BASE);
-  const [content,setContent]=useState({logo:"BRAND",headline:"Mirror-Shine Hair",subhead:"Powered by Argan Oil",cta:"SHOP NOW"});
+  const [content,setContent]=useState({logo:"L'ORÉAL",headline:"Mirror-Shine Hair",subhead:"Powered by Argan Oil",cta:"SHOP NOW"});
   const [hasFine,setHasFine]=useState(false);
   const [ov,setOv]=useState({}); const [unrev,setUnrev]=useState({});
   const [sel,setSel]=useState(null); const [subset,setSubset]=useState([]);
@@ -343,16 +355,18 @@ export default function PencilCanvas(){
   };
   const runWalkthrough=()=>{
     clearTimeout(walkTimer.current);
-    setDemo(true);setSel(null);setSubset([]);setPin(false);setFocus(null);setAudit(false);setFmtMenu(false);setPanelMenu(false);setZoomMenu(false);
-    setNotice("1 / 3 · Select any element to edit across formats");
-    walkTimer.current=setTimeout(()=>{
-      setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setFocus(null);
-      setNotice("2 / 3 · Headline selected · shared across formats");
-      walkTimer.current=setTimeout(()=>{
-        setNotice("3 / 3 · Edit once · formats update together");
-        walkTimer.current=setTimeout(()=>setNotice(null),2200);
-      },1800);
-    },1600);
+    const vertical=placed.filter(f=>f.fam==="portrait").map(f=>f.id);
+    const steps=[
+      ["1 / 6 · Select any element to edit across formats",()=>{setDemo(true);setSel(null);setSubset([]);setFocus(null);setPin(false);}],
+      ["2 / 6 · Headline selected · shared across formats",()=>{setDemo(false);setSel("headline");setAnchor(placed[0]?.id||null);setSubset([]);setFocus(null);}],
+      ["3 / 6 · Edit once · formats update together",()=>{setContent(c=>({...c,headline:"Discover beautiful shiny hair powered by nourishing argan oil"}));setFmtAdapted({});setTyping(false);}],
+      ["4 / 6 · One format diverges · local constraint detected",()=>{setFocus(vertical);setPin(true);setUnrev(u=>{const n={...u};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});}],
+      ["5 / 6 · AI recommends a layout adaptation",()=>{setAdapted(true);setAdaptedIds(vertical);setAdaptedCount(vertical.length);setFmtAdapted(m=>{const n={...m};vertical.forEach(id=>n[id]=.82);return n;});}],
+      ["6 / 6 · Approve the adaptation · format returns to green",()=>{setApproved(a=>{const n={...a};vertical.forEach(id=>n[`${id}:headline`]=true);return n;});setUnrev(u=>{const n={...u};vertical.forEach(id=>delete n[`${id}:headline`]);return n;});setAdapted(false);setNotice(null);setPin(false);setFocus(null);}],
+    ];
+    setAudit(false);setFmtMenu(false);setPanelMenu(false);setZoomMenu(false);
+    let i=0; const advance=()=>{if(i>=steps.length){setNotice(null);return;}const [msg,fn]=steps[i++];fn();setNotice(msg);walkTimer.current=setTimeout(advance,i===steps.length?2600:1500);};
+    advance();
   };
   const scope=subset.length?placed.filter(f=>subset.includes(f.id)):placed;
   const targets=sel?scope.filter(f=>carries(f,sel)&&(subset.length||ov[sel]?.[f.id]===undefined)):[];
@@ -386,6 +400,18 @@ export default function PencilCanvas(){
     typingTimer.current=setTimeout(()=>setTyping(false),650);
     if(subset.length) setOv(o=>{const c={...(o[sel]||{})};subset.forEach(i=>{c[i]=v;});return{...o,[sel]:c};});
     else setContent(c=>({...c,[sel]:v}));
+    if(sel==="headline"&&!subset.length){
+      setFmtAdapted(m=>{const n={...m};placed.forEach(f=>{
+        const F=FAM[f.fam],w=f.dw*(1-2*F.pad/100),px=f.dw*F.head;
+        if(headlineCollidesWithLogo(v,px,w,f.fam)) n[f.id]=.82;
+      });return n;});
+    }
+    if(sel==="subhead"&&!subset.length){
+      setFmtSubAdapted(m=>{const n={...m};placed.forEach(f=>{
+        const F=FAM[f.fam],w=f.dw*(1-2*F.pad/100),px=f.dw*.042;
+        if(subheadCollidesWithCta(v,px,w,f.fam)) n[f.id]=.82;
+      });return n;});
+    }
   };
   const diverge=fid=>{checkpoint();setOv(o=>({...o,[sel]:{...(o[sel]||{}),[fid]:valIn(sel,fid)}}));setSubset([fid]);};
   const restore=()=>{checkpoint();setOv(o=>{const n={...o};delete n[sel];return n;});setSubset([]);};
@@ -959,19 +985,21 @@ export default function PencilCanvas(){
                       style={{display:"flex",alignItems:"center",gap:10,padding:"8px 15px",
                         cursor:"pointer",transition:"background .12s",
                         boxShadow:focus&&focus.length===1&&focus[0]===f.id?`inset 3px 0 0 ${C.unlinked}`:"none"}}>
-                      <Thumb f={f} els={els} valIn={valIn} carries={carries} adapted={fmtAdapted[f.id]||1} flagged={n>0}/>
+                      <Thumb f={f} els={els} valIn={valIn} carries={carries} adapted={fmtAdapted[f.id]||1} flagged={n>0} ai={adaptedIds.includes(f.id)} />
                       <div style={{minWidth:0,flex:1}}>
                         <div style={{fontSize:11.5,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                           {f.platform} {f.name}</div>
                         <div style={{fontSize:10,color:"#93908a",fontVariantNumeric:"tabular-nums"}}>
                           {f.w}×{f.h} · {FAM[f.fam].label}</div>
                       </div>
-                      <button onClick={e=>{e.stopPropagation();retryFormat(f.id);}} title="Retry AI Auto-Resize for this format"
-                        style={{border:"1px solid #e6e3dd",background:"#fff",color:"#191915",
-                          borderRadius:100,width:24,height:24,cursor:"pointer",display:"flex",
-                          alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}>
-                        {IcSparkle}
-                      </button>
+                      {(n>0||adaptedIds.includes(f.id))&&(
+                        <button onClick={e=>{e.stopPropagation();retryFormat(f.id);}} title="Retry AI Auto-Resize for this format"
+                          style={{border:"1px solid #e6e3dd",background:"#fff",color:"#191915",
+                            borderRadius:100,width:24,height:24,cursor:"pointer",display:"flex",
+                            alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}>
+                          {IcSparkle}
+                        </button>
+                      )}
                       {n>0&&(
                         <button onClick={e=>{e.stopPropagation();showFormats([f.id],els.find(el=>unrev[`${f.id}:${el}`]));}} title={`Review ${n} placement(s)`}
                           style={{border:`1px solid ${REV.line}`,background:REV.bg,color:REV.fg,
@@ -993,7 +1021,7 @@ export default function PencilCanvas(){
               </div>
               <div style={{padding:"14px 15px"}}>
                 <div style={{fontSize:11.5,color:"#93908a",fontVariantNumeric:"tabular-nums",marginBottom:9}}>
-                  {subset.length?`Editing ${subset.length} of ${placed.length}`:`Shared across ${targets.length} formats`}
+                  {subset.length?`Editing ${subset.length} of ${placed.length}`:`Shared · ${targets.length} formats`}
                   {absent.length>0&&` · absent in ${absent.length}`}
                 </div>
                 {anchor&&placed.find(f=>f.id===anchor)&&(
@@ -1001,7 +1029,7 @@ export default function PencilCanvas(){
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
                   </div>
                 )}
-                <div style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native editing tools available per format</div>
+                <div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Local composition stays editable per format</div>
                 {sel&&anchor&&approved[`${anchor}:${sel}`]&&(
                   <div style={{fontSize:11.5,color:"#2f8a54",background:"#edf8f0",border:"1px solid #bfe5c9",borderRadius:8,padding:"7px 9px",marginBottom:10}}>
                     <span style={{display:"inline-block",width:7,height:7,borderRadius:9,background:"#41a66a",marginRight:7}}/>
@@ -1133,25 +1161,14 @@ export default function PencilCanvas(){
 
 /* The panel thumbnail is the canvas render at 1/n scale, not a placeholder.
    It inherits copy, crop, overflow and any per-format adaptation for free. */
-/* The mark on a placement the engine touched. The icon names the cause,
-   the amber ring carries the state. A dot alone said neither. */
-function AiMark({size=14}){
-  return (
-    <div style={{width:size,height:size,borderRadius:size,background:"#fff",
-      boxShadow:`0 0 0 1.5px ${REV.dot}, 0 1px 3px rgba(0,0,0,.22)`,color:"#191915",
-      display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <AiIcon size={Math.round(size*.66)}/>
-    </div>
-  );
-}
-
-function Thumb({f,els,valIn,carries,adapted,flagged,box=38}){
+function Thumb({f,els,valIn,carries,adapted,flagged,ai=false,box=38}){
   const k=Math.min(box/f.dw,box/f.dh);
   return (
     <div style={{width:box,height:box,flexShrink:0,borderRadius:5,position:"relative",
       background:"#efece6",display:"flex",alignItems:"center",justifyContent:"center"}}>
       {flagged&&(
-        <div style={{position:"absolute",top:-3,right:-3,zIndex:2}}><AiMark size={12}/></div>
+        <div title={ai?"AI adaptation pending":"Needs review"} style={{position:"absolute",top:-2,right:-2,zIndex:2,width:10,height:10,borderRadius:99,
+          background:ai?"#7c5cff":REV.dot,boxShadow:"0 0 0 2px #fff"}}/>
       )}
       <div style={{width:Math.round(f.dw*k),height:Math.round(f.dh*k),overflow:"hidden",borderRadius:4}}>
         <div style={{width:f.dw,height:f.dh,transform:`scale(${k})`,transformOrigin:"0 0"}}>
@@ -1166,6 +1183,7 @@ function Thumb({f,els,valIn,carries,adapted,flagged,box=38}){
 
 function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,subAdapted=1,ctaAdapted=1,elState,isAnchor,demoRing,showRing=true,onPick}){
   const F=FAM[fmt.fam], W=fmt.dw;
+  const logoWidth=fmt.fam==="portrait"?W*.30:fmt.fam==="tall"?W*.25:fmt.fam==="vertical"?W*.23:fmt.fam==="square"?W*.21:W*.16;
   /* One ring, four readings:
        thick solid violet — the placement you are actually editing
        thin  solid violet — the same shared object, living here too
@@ -1197,7 +1215,7 @@ function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,subAdapted=1,ct
 
       {/* one source asset, cropped by each ratio — this is the scaling story.
           Scene renders always; a real photo layers over it when PHOTO is set. */}
-      <Scene/>
+      <Scene fmt={fmt}/>
       {PHOTO && (
         <img src={PHOTO} alt="" draggable={false}
           style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",
@@ -1212,7 +1230,7 @@ function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,subAdapted=1,ct
       <div onClick={e=>onPick("logo",e)} style={{position:"absolute",left:`${F.pad}%`,top:`${F.pad*.9}%`,
         color:"#fff",fontFamily:"Georgia, serif",fontSize:W*.058,fontWeight:700,letterSpacing:".12em",
         textShadow:"0 1px 2px rgba(0,0,0,.35)",cursor:"pointer",...ring("logo")}}>
-        {valIn("logo",fmt.id)}
+        {valIn("logo",fmt.id)==="L'ORÉAL"?<img src={FIGMA_LOGO} alt="L'Oréal" draggable={false} style={{display:"block",width:logoWidth,height:"auto"}}/>:valIn("logo",fmt.id)}
       </div>
 
       <div style={{position:"absolute",left:`${F.pad}%`,right:`${F.pad}%`,bottom:`${F.bottom}%`,
@@ -1228,9 +1246,9 @@ function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,subAdapted=1,ct
           {valIn("subhead",fmt.id)}
         </div>
         {!fmt.noCta&&(
-          <div onClick={e=>onPick("cta",e)} style={{background:"#e3b23c",color:"#2b2011",fontWeight:700,
-            fontSize:W*.042*ctaAdapted,letterSpacing:".05em",padding:`${W*.022*ctaAdapted}px ${W*.05*ctaAdapted}px`,borderRadius:W*.008,
-            marginTop:W*.012,cursor:"pointer",...ring("cta")}}>
+          <div onClick={e=>onPick("cta",e)} style={{background:"#b77a12",color:"#fff3c7",fontFamily:"Georgia, serif",fontWeight:400,
+            fontSize:W*.042*ctaAdapted,letterSpacing:".01em",padding:`${W*.014*ctaAdapted}px ${W*.045*ctaAdapted}px`,border:"1.5px solid #f4d477",borderRadius:0,
+            marginTop:W*.012,marginLeft:0,cursor:"pointer",...ring("cta")}}>
             {valIn("cta",fmt.id)}
           </div>
         )}

@@ -394,7 +394,7 @@ function headlineCollidesWithLogo(text, px, width, fam) {
         else
             line = next;
     }
-    return lines >= 3;
+    return lines >= 2;
 }
 function subheadCollidesWithCta(text, px, width, fam) {
     if (fam !== "landscape" && fam !== "square")
@@ -495,50 +495,59 @@ const AiIcon = ({ size = 16 }) => (React.createElement("svg", { width: size, hei
     React.createElement("path", { d: "M19.4 2.4l.47 1.37 1.37.47-1.37.47-.47 1.37-.47-1.37L17.56 4.24l1.37-.47z" }),
     React.createElement("path", { d: "M5.2 17.9l.47 1.37 1.37.47-1.37.47-.47 1.37-.47-1.37L3.33 19.74l1.37-.47z" })));
 const IcSparkle = React.createElement(AiIcon, { size: 16 });
-/* The creative asset. Rendered as one square scene and *sliced* by each
-   format's aspect ratio — the same thing object-fit:cover does to a photo,
-   but with zero network dependency so a live demo can't break. */
-function Scene() {
-    return (React.createElement("svg", { viewBox: "0 0 1000 1000", preserveAspectRatio: "xMidYMid slice", style: { position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" } },
-        React.createElement("defs", null,
-            React.createElement("linearGradient", { id: "pg-bg", x1: "0", y1: "0", x2: "1", y2: "1" },
-                React.createElement("stop", { offset: "0%", stopColor: "#241a0d" }),
-                React.createElement("stop", { offset: "42%", stopColor: "#6d4a18" }),
-                React.createElement("stop", { offset: "76%", stopColor: "#c79a3f" }),
-                React.createElement("stop", { offset: "100%", stopColor: "#f0dfae" })),
-            React.createElement("radialGradient", { id: "pg-glow", cx: "72%", cy: "24%", r: "52%" },
-                React.createElement("stop", { offset: "0%", stopColor: "#fff6d8", stopOpacity: ".85" }),
-                React.createElement("stop", { offset: "100%", stopColor: "#fff6d8", stopOpacity: "0" })),
-            React.createElement("linearGradient", { id: "pg-silk", x1: "0", y1: "1", x2: "1", y2: "0" },
-                React.createElement("stop", { offset: "0%", stopColor: "#f6d98f", stopOpacity: ".0" }),
-                React.createElement("stop", { offset: "55%", stopColor: "#f8e3a8", stopOpacity: ".55" }),
-                React.createElement("stop", { offset: "100%", stopColor: "#fffaf0", stopOpacity: ".0" })),
-            React.createElement("linearGradient", { id: "pg-glass", x1: "0", y1: "0", x2: "1", y2: "0" },
-                React.createElement("stop", { offset: "0%", stopColor: "#2c1d09", stopOpacity: ".55" }),
-                React.createElement("stop", { offset: "26%", stopColor: "#e8b95f" }),
-                React.createElement("stop", { offset: "58%", stopColor: "#f7dfa4" }),
-                React.createElement("stop", { offset: "100%", stopColor: "#8a5f1d" }))),
-        React.createElement("rect", { width: "1000", height: "1000", fill: "url(#pg-bg)" }),
-        React.createElement("rect", { width: "1000", height: "1000", fill: "url(#pg-glow)" }),
-        React.createElement("path", { d: "M-40 690 C 250 560, 430 780, 720 610 S 1010 470, 1080 520 L 1080 1040 L -40 1040 Z", fill: "url(#pg-silk)", opacity: ".8" }),
-        React.createElement("path", { d: "M-40 800 C 220 700, 470 880, 760 740 S 1020 640, 1080 690 L 1080 1040 L -40 1040 Z", fill: "#f3d791", opacity: ".22" }),
-        [[150, 180, 26], [262, 116, 14], [402, 208, 10], [812, 150, 20], [706, 258, 12], [905, 330, 16], [78, 330, 11], [560, 120, 9]]
-            .map(([cx, cy, r], i) => (React.createElement("circle", { key: i, cx: cx, cy: cy, r: r, fill: "#fff3cf", opacity: .10 + (i % 3) * .05 }))),
-        React.createElement("g", { transform: "translate(596,300)" },
-            React.createElement("rect", { x: "34", y: "-58", width: "56", height: "58", rx: "9", fill: "#2a1c0a", opacity: ".92" }),
-            React.createElement("rect", { x: "52", y: "-92", width: "20", height: "38", rx: "6", fill: "#241705", opacity: ".95" }),
-            React.createElement("rect", { x: "0", y: "0", width: "124", height: "352", rx: "26", fill: "url(#pg-glass)" }),
-            React.createElement("rect", { x: "12", y: "18", width: "26", height: "312", rx: "14", fill: "#fff6dc", opacity: ".22" }),
-            React.createElement("rect", { x: "20", y: "120", width: "86", height: "116", rx: "8", fill: "#fdf7e6", opacity: ".93" }),
-            React.createElement("circle", { cx: "63", cy: "160", r: "21", fill: "none", stroke: "#6b4a18", strokeWidth: "2.4" }),
-            [0, 45, 90, 135].map(a => (React.createElement("line", { key: a, x1: "63", y1: "160", x2: 63 + 21 * Math.cos(a * Math.PI / 180), y2: 160 + 21 * Math.sin(a * Math.PI / 180), stroke: "#6b4a18", strokeWidth: "1.6", transform: `rotate(${a} 63 160)` }))),
-            React.createElement("rect", { x: "30", y: "192", width: "66", height: "4", rx: "2", fill: "#6b4a18", opacity: ".65" }),
-            React.createElement("rect", { x: "38", y: "203", width: "50", height: "3", rx: "1.5", fill: "#6b4a18", opacity: ".45" }),
-            React.createElement("ellipse", { cx: "62", cy: "358", rx: "96", ry: "16", fill: "#1d1206", opacity: ".45" }))));
+const FIGMA_BG = "./assets/figma/audit-selected-default-overflow.png";
+const FIGMA_PRODUCT = "./assets/figma/15160 [Converted]-02 2.png";
+const FIGMA_LOGO = "./assets/figma/Vector.svg";
+/* The original challenge assets are used as the visual base; editable copy
+   layers remain above them so the multi-format behavior stays demonstrable. */
+function Scene({ fmt }) {
+    const productWidth = fmt?.fam === "portrait" ? "58%" : fmt?.fam === "tall" ? "53%" : fmt?.fam === "vertical" ? "48%" : fmt?.fam === "square" ? "39%" : "24%";
+    const productRight = fmt?.fam === "portrait" ? "14%" : fmt?.fam === "vertical" ? "12%" : "10%";
+    const productBottom = fmt?.fam === "portrait" ? "20%" : fmt?.fam === "tall" ? "16%" : fmt?.fam === "vertical" ? "16%" : fmt?.fam === "square" ? "16%" : "8%";
+    return (React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" } },
+            React.createElement("img", { src: FIGMA_BG, alt: "", draggable: false, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }),
+            React.createElement("img", { src: FIGMA_PRODUCT, alt: "", draggable: false, style: { position: "absolute", right: productRight, bottom: productBottom, width: productWidth, height: "auto", objectFit: "contain" } })),
+        false && (React.createElement("svg", { viewBox: "0 0 1000 1000", preserveAspectRatio: "xMidYMid slice", style: { position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" } },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: "pg-bg", x1: "0", y1: "0", x2: "1", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#241a0d" }),
+                    React.createElement("stop", { offset: "42%", stopColor: "#6d4a18" }),
+                    React.createElement("stop", { offset: "76%", stopColor: "#c79a3f" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#f0dfae" })),
+                React.createElement("radialGradient", { id: "pg-glow", cx: "72%", cy: "24%", r: "52%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#fff6d8", stopOpacity: ".85" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#fff6d8", stopOpacity: "0" })),
+                React.createElement("linearGradient", { id: "pg-silk", x1: "0", y1: "1", x2: "1", y2: "0" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#f6d98f", stopOpacity: ".0" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#f8e3a8", stopOpacity: ".55" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#fffaf0", stopOpacity: ".0" })),
+                React.createElement("linearGradient", { id: "pg-glass", x1: "0", y1: "0", x2: "1", y2: "0" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#2c1d09", stopOpacity: ".55" }),
+                    React.createElement("stop", { offset: "26%", stopColor: "#e8b95f" }),
+                    React.createElement("stop", { offset: "58%", stopColor: "#f7dfa4" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#8a5f1d" }))),
+            React.createElement("rect", { width: "1000", height: "1000", fill: "url(#pg-bg)" }),
+            React.createElement("rect", { width: "1000", height: "1000", fill: "url(#pg-glow)" }),
+            React.createElement("path", { d: "M-40 690 C 250 560, 430 780, 720 610 S 1010 470, 1080 520 L 1080 1040 L -40 1040 Z", fill: "url(#pg-silk)", opacity: ".8" }),
+            React.createElement("path", { d: "M-40 800 C 220 700, 470 880, 760 740 S 1020 640, 1080 690 L 1080 1040 L -40 1040 Z", fill: "#f3d791", opacity: ".22" }),
+            [[150, 180, 26], [262, 116, 14], [402, 208, 10], [812, 150, 20], [706, 258, 12], [905, 330, 16], [78, 330, 11], [560, 120, 9]]
+                .map(([cx, cy, r], i) => (React.createElement("circle", { key: i, cx: cx, cy: cy, r: r, fill: "#fff3cf", opacity: .10 + (i % 3) * .05 }))),
+            React.createElement("g", { transform: "translate(596,300)" },
+                React.createElement("rect", { x: "34", y: "-58", width: "56", height: "58", rx: "9", fill: "#2a1c0a", opacity: ".92" }),
+                React.createElement("rect", { x: "52", y: "-92", width: "20", height: "38", rx: "6", fill: "#241705", opacity: ".95" }),
+                React.createElement("rect", { x: "0", y: "0", width: "124", height: "352", rx: "26", fill: "url(#pg-glass)" }),
+                React.createElement("rect", { x: "12", y: "18", width: "26", height: "312", rx: "14", fill: "#fff6dc", opacity: ".22" }),
+                React.createElement("rect", { x: "20", y: "120", width: "86", height: "116", rx: "8", fill: "#fdf7e6", opacity: ".93" }),
+                React.createElement("circle", { cx: "63", cy: "160", r: "21", fill: "none", stroke: "#6b4a18", strokeWidth: "2.4" }),
+                [0, 45, 90, 135].map(a => (React.createElement("line", { key: a, x1: "63", y1: "160", x2: 63 + 21 * Math.cos(a * Math.PI / 180), y2: 160 + 21 * Math.sin(a * Math.PI / 180), stroke: "#6b4a18", strokeWidth: "1.6", transform: `rotate(${a} 63 160)` }))),
+                React.createElement("rect", { x: "30", y: "192", width: "66", height: "4", rx: "2", fill: "#6b4a18", opacity: ".65" }),
+                React.createElement("rect", { x: "38", y: "203", width: "50", height: "3", rx: "1.5", fill: "#6b4a18", opacity: ".45" }),
+                React.createElement("ellipse", { cx: "62", cy: "358", rx: "96", ry: "16", fill: "#1d1206", opacity: ".45" }))))));
 }
 function PencilCanvas() {
     const [formats, setFormats] = useState(BASE);
-    const [content, setContent] = useState({ logo: "BRAND", headline: "Mirror-Shine Hair", subhead: "Powered by Argan Oil", cta: "SHOP NOW" });
+    const [content, setContent] = useState({ logo: "L'ORÉAL", headline: "Mirror-Shine Hair", subhead: "Powered by Argan Oil", cta: "SHOP NOW" });
     const [hasFine, setHasFine] = useState(false);
     const [ov, setOv] = useState({});
     const [unrev, setUnrev] = useState({});
@@ -649,28 +658,25 @@ function PencilCanvas() {
     };
     const runWalkthrough = () => {
         clearTimeout(walkTimer.current);
-        setDemo(true);
-        setSel(null);
-        setSubset([]);
-        setPin(false);
-        setFocus(null);
+        const vertical = placed.filter(f => f.fam === "portrait").map(f => f.id);
+        const steps = [
+            ["1 / 6 · Select any element to edit across formats", () => { setDemo(true); setSel(null); setSubset([]); setFocus(null); setPin(false); }],
+            ["2 / 6 · Headline selected · shared across formats", () => { setDemo(false); setSel("headline"); setAnchor(placed[0]?.id || null); setSubset([]); setFocus(null); }],
+            ["3 / 6 · Edit once · formats update together", () => { setContent(c => ({ ...c, headline: "Discover beautiful shiny hair powered by nourishing argan oil" })); setFmtAdapted({}); setTyping(false); }],
+            ["4 / 6 · One format diverges · local constraint detected", () => { setFocus(vertical); setPin(true); setUnrev(u => { const n = { ...u }; vertical.forEach(id => n[`${id}:headline`] = true); return n; }); }],
+            ["5 / 6 · AI recommends a layout adaptation", () => { setAdapted(true); setAdaptedIds(vertical); setAdaptedCount(vertical.length); setFmtAdapted(m => { const n = { ...m }; vertical.forEach(id => n[id] = .82); return n; }); }],
+            ["6 / 6 · Approve the adaptation · format returns to green", () => { setApproved(a => { const n = { ...a }; vertical.forEach(id => n[`${id}:headline`] = true); return n; }); setUnrev(u => { const n = { ...u }; vertical.forEach(id => delete n[`${id}:headline`]); return n; }); setAdapted(false); setNotice(null); setPin(false); setFocus(null); }],
+        ];
         setAudit(false);
         setFmtMenu(false);
         setPanelMenu(false);
         setZoomMenu(false);
-        setNotice("1 / 3 · Select any element to edit across formats");
-        walkTimer.current = setTimeout(() => {
-            setDemo(false);
-            setSel("headline");
-            setAnchor(placed[0]?.id || null);
-            setSubset([]);
-            setFocus(null);
-            setNotice("2 / 3 · Headline selected · shared across formats");
-            walkTimer.current = setTimeout(() => {
-                setNotice("3 / 3 · Edit once · formats update together");
-                walkTimer.current = setTimeout(() => setNotice(null), 2200);
-            }, 1800);
-        }, 1600);
+        let i = 0;
+        const advance = () => { if (i >= steps.length) {
+            setNotice(null);
+            return;
+        } const [msg, fn] = steps[i++]; fn(); setNotice(msg); walkTimer.current = setTimeout(advance, i === steps.length ? 2600 : 1500); };
+        advance();
     };
     const scope = subset.length ? placed.filter(f => subset.includes(f.id)) : placed;
     const targets = sel ? scope.filter(f => carries(f, sel) && (subset.length || ov[sel]?.[f.id] === undefined)) : [];
@@ -709,6 +715,28 @@ function PencilCanvas() {
             setOv(o => { const c = { ...(o[sel] || {}) }; subset.forEach(i => { c[i] = v; }); return { ...o, [sel]: c }; });
         else
             setContent(c => ({ ...c, [sel]: v }));
+        if (sel === "headline" && !subset.length) {
+            setFmtAdapted(m => {
+                const n = { ...m };
+                placed.forEach(f => {
+                    const F = FAM[f.fam], w = f.dw * (1 - 2 * F.pad / 100), px = f.dw * F.head;
+                    if (headlineCollidesWithLogo(v, px, w, f.fam))
+                        n[f.id] = .82;
+                });
+                return n;
+            });
+        }
+        if (sel === "subhead" && !subset.length) {
+            setFmtSubAdapted(m => {
+                const n = { ...m };
+                placed.forEach(f => {
+                    const F = FAM[f.fam], w = f.dw * (1 - 2 * F.pad / 100), px = f.dw * .042;
+                    if (subheadCollidesWithCta(v, px, w, f.fam))
+                        n[f.id] = .82;
+                });
+                return n;
+            });
+        }
     };
     const diverge = fid => { checkpoint(); setOv(o => ({ ...o, [sel]: { ...(o[sel] || {}), [fid]: valIn(sel, fid) } })); setSubset([fid]); };
     const restore = () => { checkpoint(); setOv(o => { const n = { ...o }; delete n[sel]; return n; }); setSubset([]); };
@@ -1243,7 +1271,7 @@ function PencilCanvas() {
                     return (React.createElement("div", { key: f.id, onClick: () => goTo(f), title: `Go to ${f.platform} ${f.name}`, onMouseEnter: e => { e.currentTarget.style.background = "#f7f6f4"; }, onMouseLeave: e => { e.currentTarget.style.background = "transparent"; }, style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 15px",
                             cursor: "pointer", transition: "background .12s",
                             boxShadow: focus && focus.length === 1 && focus[0] === f.id ? `inset 3px 0 0 ${C.unlinked}` : "none" } },
-                        React.createElement(Thumb, { f: f, els: els, valIn: valIn, carries: carries, adapted: fmtAdapted[f.id] || 1, flagged: n > 0 }),
+                        React.createElement(Thumb, { f: f, els: els, valIn: valIn, carries: carries, adapted: fmtAdapted[f.id] || 1, flagged: n > 0, ai: adaptedIds.includes(f.id) }),
                         React.createElement("div", { style: { minWidth: 0, flex: 1 } },
                             React.createElement("div", { style: { fontSize: 11.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } },
                                 f.platform,
@@ -1255,9 +1283,9 @@ function PencilCanvas() {
                                 f.h,
                                 " \u00B7 ",
                                 FAM[f.fam].label)),
-                        React.createElement("button", { onClick: e => { e.stopPropagation(); retryFormat(f.id); }, title: "Retry AI Auto-Resize for this format", style: { border: "1px solid #e6e3dd", background: "#fff", color: "#191915",
+                        (n > 0 || adaptedIds.includes(f.id)) && (React.createElement("button", { onClick: e => { e.stopPropagation(); retryFormat(f.id); }, title: "Retry AI Auto-Resize for this format", style: { border: "1px solid #e6e3dd", background: "#fff", color: "#191915",
                                 borderRadius: 100, width: 24, height: 24, cursor: "pointer", display: "flex",
-                                alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 } }, IcSparkle),
+                                alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 } }, IcSparkle)),
                         n > 0 && (React.createElement("button", { onClick: e => { e.stopPropagation(); showFormats([f.id], els.find(el => unrev[`${f.id}:${el}`])); }, title: `Review ${n} placement(s)`, style: { border: `1px solid ${REV.line}`, background: REV.bg, color: REV.fg,
                                 borderRadius: 100, padding: "2px 8px", fontSize: 10, cursor: "pointer",
                                 fontFamily: "inherit", fontWeight: 600, flexShrink: 0 } }, "Review"))));
@@ -1267,13 +1295,13 @@ function PencilCanvas() {
                     React.createElement("button", { onClick: () => { setSel(null); setSubset([]); clearSpot(); }, style: { ...ghost, padding: "4px 7px", display: "flex", alignItems: "center" } }, IcClose)),
                 React.createElement("div", { style: { padding: "14px 15px" } },
                     React.createElement("div", { style: { fontSize: 11.5, color: "#93908a", fontVariantNumeric: "tabular-nums", marginBottom: 9 } },
-                        subset.length ? `Editing ${subset.length} of ${placed.length}` : `Shared across ${targets.length} formats`,
+                        subset.length ? `Editing ${subset.length} of ${placed.length}` : `Shared · ${targets.length} formats`,
                         absent.length > 0 && ` · absent in ${absent.length}`),
                     anchor && placed.find(f => f.id === anchor) && (React.createElement("div", { style: { fontSize: 11, color: divIn.includes(anchor) ? "#6a4fe8" : "#6f6c63", marginBottom: 9 } },
                         placed.find(f => f.id === anchor).platform,
                         " \u00B7 ",
                         divIn.includes(anchor) ? "Local override" : "Shared source")),
-                    React.createElement("div", { style: { fontSize: 10.5, color: "#9a968d", marginBottom: 10 } }, "Native editing tools available per format"),
+                    React.createElement("div", { title: "Native Pencil editing tools remain available on each format", style: { fontSize: 10.5, color: "#9a968d", marginBottom: 10 } }, "Local composition stays editable per format"),
                     sel && anchor && approved[`${anchor}:${sel}`] && (React.createElement("div", { style: { fontSize: 11.5, color: "#2f8a54", background: "#edf8f0", border: "1px solid #bfe5c9", borderRadius: 8, padding: "7px 9px", marginBottom: 10 } },
                         React.createElement("span", { style: { display: "inline-block", width: 7, height: 7, borderRadius: 9, background: "#41a66a", marginRight: 7 } }),
                         "Approved \u00B7 change applied")),
@@ -1375,26 +1403,19 @@ function PencilCanvas() {
 }
 /* The panel thumbnail is the canvas render at 1/n scale, not a placeholder.
    It inherits copy, crop, overflow and any per-format adaptation for free. */
-/* The mark on a placement the engine touched. The icon names the cause,
-   the amber ring carries the state. A dot alone said neither. */
-function AiMark({ size = 14 }) {
-    return (React.createElement("div", { style: { width: size, height: size, borderRadius: size, background: "#fff",
-            boxShadow: `0 0 0 1.5px ${REV.dot}, 0 1px 3px rgba(0,0,0,.22)`, color: "#191915",
-            display: "flex", alignItems: "center", justifyContent: "center" } },
-        React.createElement(AiIcon, { size: Math.round(size * .66) })));
-}
-function Thumb({ f, els, valIn, carries, adapted, flagged, box = 38 }) {
+function Thumb({ f, els, valIn, carries, adapted, flagged, ai = false, box = 38 }) {
     const k = Math.min(box / f.dw, box / f.dh);
     return (React.createElement("div", { style: { width: box, height: box, flexShrink: 0, borderRadius: 5, position: "relative",
             background: "#efece6", display: "flex", alignItems: "center", justifyContent: "center" } },
-        flagged && (React.createElement("div", { style: { position: "absolute", top: -3, right: -3, zIndex: 2 } },
-            React.createElement(AiMark, { size: 12 }))),
+        flagged && (React.createElement("div", { title: ai ? "AI adaptation pending" : "Needs review", style: { position: "absolute", top: -2, right: -2, zIndex: 2, width: 10, height: 10, borderRadius: 99,
+                background: ai ? "#7c5cff" : REV.dot, boxShadow: "0 0 0 2px #fff" } })),
         React.createElement("div", { style: { width: Math.round(f.dw * k), height: Math.round(f.dh * k), overflow: "hidden", borderRadius: 4 } },
             React.createElement("div", { style: { width: f.dw, height: f.dh, transform: `scale(${k})`, transformOrigin: "0 0" } },
                 React.createElement(Ad, { fmt: f, els: els, valIn: valIn, carries: carries, sel: null, isAbs: false, isBrk: false, isDiv: false, adapted: adapted, ctaAdapted: 1, showRing: false, onPick: () => { } })))));
 }
 function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, subAdapted = 1, ctaAdapted = 1, elState, isAnchor, demoRing, showRing = true, onPick }) {
     const F = FAM[fmt.fam], W = fmt.dw;
+    const logoWidth = fmt.fam === "portrait" ? W * .30 : fmt.fam === "tall" ? W * .25 : fmt.fam === "vertical" ? W * .23 : fmt.fam === "square" ? W * .21 : W * .16;
     /* One ring, four readings:
          thick solid violet — the placement you are actually editing
          thin  solid violet — the same shared object, living here too
@@ -1422,14 +1443,14 @@ function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, subAd
             /* tier 3 — the only loud signal, and only while a decision is open */
             boxShadow: isBrk ? `0 0 0 2px ${C.warn}` : "0 1px 3px rgba(0,0,0,.16)",
             userSelect: "none", transition: "box-shadow .15s" } },
-        React.createElement(Scene, null),
+        React.createElement(Scene, { fmt: fmt }),
         PHOTO && (React.createElement("img", { src: PHOTO, alt: "", draggable: false, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
                 objectPosition: "52% 45%", pointerEvents: "none" }, onError: e => { e.currentTarget.style.display = "none"; } })),
         React.createElement("div", { style: { position: "absolute", inset: 0, pointerEvents: "none",
                 background: `linear-gradient(to top, rgba(20,14,6,.82) 0%, rgba(20,14,6,.45) ${F.bottom + 22}%, rgba(20,14,6,0) 62%)` } }),
         React.createElement("div", { onClick: e => onPick("logo", e), style: { position: "absolute", left: `${F.pad}%`, top: `${F.pad * .9}%`,
                 color: "#fff", fontFamily: "Georgia, serif", fontSize: W * .058, fontWeight: 700, letterSpacing: ".12em",
-                textShadow: "0 1px 2px rgba(0,0,0,.35)", cursor: "pointer", ...ring("logo") } }, valIn("logo", fmt.id)),
+                textShadow: "0 1px 2px rgba(0,0,0,.35)", cursor: "pointer", ...ring("logo") } }, valIn("logo", fmt.id) === "L'ORÉAL" ? React.createElement("img", { src: FIGMA_LOGO, alt: "L'Or\u00E9al", draggable: false, style: { display: "block", width: logoWidth, height: "auto" } }) : valIn("logo", fmt.id)),
         React.createElement("div", { style: { position: "absolute", left: `${F.pad}%`, right: `${F.pad}%`, bottom: `${F.bottom}%`,
                 display: "flex", flexDirection: "column", alignItems: "flex-start", gap: W * .022 } },
             React.createElement("div", { onClick: e => onPick("headline", e), style: { color: "#fff", fontFamily: "Georgia, serif",
@@ -1438,9 +1459,9 @@ function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, subAd
             React.createElement("div", { onClick: e => onPick("subhead", e), style: { color: "#f5e6c4", fontFamily: "Georgia, serif",
                     fontSize: W * .052 * (subAdapted || 1), lineHeight: 1.2, textShadow: "0 1px 2px rgba(0,0,0,.3)", cursor: "pointer",
                     maxWidth: "100%", ...ring("subhead") } }, valIn("subhead", fmt.id)),
-            !fmt.noCta && (React.createElement("div", { onClick: e => onPick("cta", e), style: { background: "#e3b23c", color: "#2b2011", fontWeight: 700,
-                    fontSize: W * .042 * ctaAdapted, letterSpacing: ".05em", padding: `${W * .022 * ctaAdapted}px ${W * .05 * ctaAdapted}px`, borderRadius: W * .008,
-                    marginTop: W * .012, cursor: "pointer", ...ring("cta") } }, valIn("cta", fmt.id))),
+            !fmt.noCta && (React.createElement("div", { onClick: e => onPick("cta", e), style: { background: "#b77a12", color: "#fff3c7", fontFamily: "Georgia, serif", fontWeight: 400,
+                    fontSize: W * .042 * ctaAdapted, letterSpacing: ".01em", padding: `${W * .014 * ctaAdapted}px ${W * .045 * ctaAdapted}px`, border: "1.5px solid #f4d477", borderRadius: 0,
+                    marginTop: W * .012, marginLeft: 0, cursor: "pointer", ...ring("cta") } }, valIn("cta", fmt.id))),
             showFine && (React.createElement("div", { onClick: e => onPick("fineprint", e), style: { color: "rgba(255,255,255,.8)", fontSize: W * .026,
                     lineHeight: 1.25, marginTop: W * .014, cursor: "pointer", maxWidth: "100%", ...ring("fineprint") } }, valIn("fineprint", fmt.id)))),
         fmt.fam === "portrait" && (React.createElement("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: "13%",
