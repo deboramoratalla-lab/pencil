@@ -52,7 +52,7 @@ node interaction-checks.mjs
 ## Project map
 
 - `prototype-review/` — working prototype, source, build script, assets and QA notes.
-- `audit/` and `audit-flow-a/` — earlier flow audits and screenshots from the challenge process.
+- `docs/audit/` and `docs/audit-flow-a/` — earlier flow audits and screenshots from the challenge process.
 - `case-study-foundation.md` — research, framing and product rationale.
 
-Built as an iterative exploration following the original challenge and subsequent feedback on clarity, hierarchy and tangible interaction.
+Built as an iterative exploration following the original challenge and subsequent feedback on clarity, hierarchy and tangible interaction. The supporting audits are kept under `docs/` so the working prototype remains the primary entry point.
