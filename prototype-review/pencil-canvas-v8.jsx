@@ -1059,7 +1059,7 @@ export default function PencilCanvas(){
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
                   </div>
                 )}
-                <div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native Pencil tools available per format · copy, background, product imagery and composition stay editable locally</div>
+                <div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native Pencil tools available per format · copy, typography, imagery and composition stay editable locally</div>
                 {sel&&anchor&&approved[`${anchor}:${sel}`]&&(
                   <div style={{fontSize:11.5,color:"#2f8a54",background:"#edf8f0",border:"1px solid #bfe5c9",borderRadius:8,padding:"7px 9px",marginBottom:10}}>
                     <span style={{display:"inline-block",width:7,height:7,borderRadius:9,background:"#41a66a",marginRight:7}}/>
@@ -1068,7 +1068,7 @@ export default function PencilCanvas(){
                 )}
                 {VISUAL_EL.has(sel)?(
                   <div style={{border:"1px solid #e0dcd4",borderRadius:9,padding:"10px 11px",fontSize:12,color:"#6b6960",background:"#f7f6f3",lineHeight:1.4}}>
-                    Edit this {LABEL[sel].toLowerCase()} with Pencil’s native canvas tools. Its local composition can still be tracked and reviewed here.
+                    Edit this {LABEL[sel].toLowerCase()} with Pencil’s native canvas tools — move, resize, rotate and style. Its local composition can still be tracked and reviewed here.
                   </div>
                 ):(
                   <input aria-label={`Edit ${LABEL[sel]}`} readOnly={scopeMode==="selection"&&!reviewEditing} value={subset.length?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
