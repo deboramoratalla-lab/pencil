@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/pencil-canvas-v8.html"
+    }
+  ]
+}
