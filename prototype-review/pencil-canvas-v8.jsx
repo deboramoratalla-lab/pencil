@@ -273,6 +273,7 @@ export default function PencilCanvas(){
   const [sel,setSel]=useState(null); const [subset,setSubset]=useState([]);
   const [scopeMode,setScopeMode]=useState("all");
   const [reviewEditing,setReviewEditing]=useState(false);
+  const [nativeOpen,setNativeOpen]=useState(false);
   const [approved,setApproved]=useState({});
   const [adapted,setAdapted]=useState(false);
   const [adaptedCount,setAdaptedCount]=useState(0);
@@ -354,14 +355,14 @@ export default function PencilCanvas(){
   const pick=(el,fid,shift)=>{
     setDemo(false); setPin(false);
     if(shift&&sel===el){setSubset(s=>s.includes(fid)?s.filter(i=>i!==fid):s.concat(fid));return;}
-    setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setScopeMode(ov[el]?.[fid]!==undefined?"local":"all");setReviewEditing(false);setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
+    setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setScopeMode(ov[el]?.[fid]!==undefined?"local":"all");setReviewEditing(false);setNativeOpen(false);setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
   };
   const chooseScope=mode=>{
     setScopeMode(mode);
     if(mode==="all") setSubset([]);
     else if(mode==="vertical") setSubset(placed.filter(f=>f.fam==="portrait").map(f=>f.id));
     else if(mode==="local"&&anchor) setSubset([anchor]);
-    setReviewEditing(false);setAdapted(false);setFocus(null);
+    setReviewEditing(false);setNativeOpen(false);setAdapted(false);setFocus(null);
   };
   const runWalkthrough=()=>{
     clearTimeout(walkTimer.current);
@@ -1059,8 +1060,13 @@ export default function PencilCanvas(){
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
                   </div>
                 )}
-                {broken.length===0&&!adapted&&<div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native Pencil tools available per format · copy, typography, imagery and composition stay editable locally</div>}
-                {sel&&anchor&&approved[`${anchor}:${sel}`]&&broken.length===0&&(
+                {broken.length===0&&!adapted&&reviewCount===0&&layoutIssueCount===0&&<>
+                  <button onClick={()=>setNativeOpen(v=>!v)} style={{...ghost,width:"100%",textAlign:"left",fontSize:10.5,padding:"6px 8px",marginBottom:nativeOpen?5:10}}>
+                    Native editing available {nativeOpen?"−":"+"}
+                  </button>
+                  {nativeOpen&&<div style={{fontSize:10.5,color:"#77736b",lineHeight:1.35,marginBottom:10,padding:"0 8px"}}>Move, resize, rotate and style with Pencil’s native tools. Local composition remains trackable here.</div>}
+                </>}
+                {sel&&anchor&&approved[`${anchor}:${sel}`]&&broken.length===0&&reviewCount===0&&layoutIssueCount===0&&(
                   <div style={{fontSize:11.5,color:"#2f8a54",background:"#edf8f0",border:"1px solid #bfe5c9",borderRadius:8,padding:"7px 9px",marginBottom:10}}>
                     <span style={{display:"inline-block",width:7,height:7,borderRadius:9,background:"#41a66a",marginRight:7}}/>
                     Approved · change applied
@@ -1081,7 +1087,13 @@ export default function PencilCanvas(){
                 {anchor&&!divIn.includes(anchor)&&(
                   <button onClick={()=>diverge(anchor)} style={{...ghost,marginTop:9,width:"100%"}}>Unlink this format</button>
                 )}
-                {divIn.length>0&&subset.length<=1&&(
+                {divIn.length>0&&(scopeMode==="vertical"||scopeMode==="selection")&&(
+                  <div style={{marginTop:10,background:"#f7f5ff",border:"1px solid #e9e4ff",borderRadius:9,padding:"7px 9px",display:"flex",alignItems:"center",gap:7}}>
+                    <span style={{fontSize:11.5,color:"#5d48b4"}}>{divIn.length} local overrides</span>
+                    <button onClick={restore} style={{...ghost,fontSize:10.5,padding:"2px 7px",marginLeft:"auto"}}>Relink group</button>
+                  </div>
+                )}
+                {divIn.length>0&&subset.length<=1&&scopeMode!=="vertical"&&scopeMode!=="selection"&&(
                   <div style={{marginTop:10,background:"#f7f5ff",border:"1px solid #e9e4ff",borderRadius:10,
                     padding:"9px 11px",display:"flex",alignItems:"center",gap:8}}>
                     <span style={{width:12,height:0,borderTop:`2px dashed ${C.unlinked}`}}/>

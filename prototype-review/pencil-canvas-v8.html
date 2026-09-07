@@ -556,6 +556,7 @@ function PencilCanvas() {
     const [subset, setSubset] = useState([]);
     const [scopeMode, setScopeMode] = useState("all");
     const [reviewEditing, setReviewEditing] = useState(false);
+    const [nativeOpen, setNativeOpen] = useState(false);
     const [approved, setApproved] = useState({});
     const [adapted, setAdapted] = useState(false);
     const [adaptedCount, setAdaptedCount] = useState(0);
@@ -656,6 +657,7 @@ function PencilCanvas() {
         setSubset(ov[el]?.[fid] !== undefined ? [fid] : []);
         setScopeMode(ov[el]?.[fid] !== undefined ? "local" : "all");
         setReviewEditing(false);
+        setNativeOpen(false);
         setAdapted(false);
         setFocus(null);
         setAudit(false);
@@ -670,6 +672,7 @@ function PencilCanvas() {
         else if (mode === "local" && anchor)
             setSubset([anchor]);
         setReviewEditing(false);
+        setNativeOpen(false);
         setAdapted(false);
         setFocus(null);
     };
@@ -1328,8 +1331,12 @@ function PencilCanvas() {
                         placed.find(f => f.id === anchor).platform,
                         " \u00B7 ",
                         divIn.includes(anchor) ? "Local override" : "Shared source")),
-                    broken.length === 0 && !adapted && React.createElement("div", { title: "Native Pencil editing tools remain available on each format", style: { fontSize: 10.5, color: "#9a968d", marginBottom: 10 } }, "Native Pencil tools available per format \u00B7 copy, typography, imagery and composition stay editable locally"),
-                    sel && anchor && approved[`${anchor}:${sel}`] && broken.length === 0 && (React.createElement("div", { style: { fontSize: 11.5, color: "#2f8a54", background: "#edf8f0", border: "1px solid #bfe5c9", borderRadius: 8, padding: "7px 9px", marginBottom: 10 } },
+                    broken.length === 0 && !adapted && reviewCount === 0 && layoutIssueCount === 0 && React.createElement(React.Fragment, null,
+                        React.createElement("button", { onClick: () => setNativeOpen(v => !v), style: { ...ghost, width: "100%", textAlign: "left", fontSize: 10.5, padding: "6px 8px", marginBottom: nativeOpen ? 5 : 10 } },
+                            "Native editing available ",
+                            nativeOpen ? "−" : "+"),
+                        nativeOpen && React.createElement("div", { style: { fontSize: 10.5, color: "#77736b", lineHeight: 1.35, marginBottom: 10, padding: "0 8px" } }, "Move, resize, rotate and style with Pencil\u2019s native tools. Local composition remains trackable here.")),
+                    sel && anchor && approved[`${anchor}:${sel}`] && broken.length === 0 && reviewCount === 0 && layoutIssueCount === 0 && (React.createElement("div", { style: { fontSize: 11.5, color: "#2f8a54", background: "#edf8f0", border: "1px solid #bfe5c9", borderRadius: 8, padding: "7px 9px", marginBottom: 10 } },
                         React.createElement("span", { style: { display: "inline-block", width: 7, height: 7, borderRadius: 9, background: "#41a66a", marginRight: 7 } }),
                         "Approved \u00B7 change applied")),
                     VISUAL_EL.has(sel) ? (React.createElement("div", { style: { border: "1px solid #e0dcd4", borderRadius: 9, padding: "10px 11px", fontSize: 12, color: "#6b6960", background: "#f7f6f3", lineHeight: 1.4 } },
@@ -1339,7 +1346,12 @@ function PencilCanvas() {
                             fontSize: 13.5, boxSizing: "border-box", fontFamily: "inherit", background: scopeMode === "selection" && !reviewEditing ? "#f7f6f3" : "#fcfbf9" } })),
                     scopeMode === "selection" && !reviewEditing && (React.createElement("button", { onClick: () => setReviewEditing(true), style: { ...ghost, marginTop: 8, width: "100%", fontSize: 11.5 } }, "Edit this set")),
                     anchor && !divIn.includes(anchor) && (React.createElement("button", { onClick: () => diverge(anchor), style: { ...ghost, marginTop: 9, width: "100%" } }, "Unlink this format")),
-                    divIn.length > 0 && subset.length <= 1 && (React.createElement("div", { style: { marginTop: 10, background: "#f7f5ff", border: "1px solid #e9e4ff", borderRadius: 10,
+                    divIn.length > 0 && (scopeMode === "vertical" || scopeMode === "selection") && (React.createElement("div", { style: { marginTop: 10, background: "#f7f5ff", border: "1px solid #e9e4ff", borderRadius: 9, padding: "7px 9px", display: "flex", alignItems: "center", gap: 7 } },
+                        React.createElement("span", { style: { fontSize: 11.5, color: "#5d48b4" } },
+                            divIn.length,
+                            " local overrides"),
+                        React.createElement("button", { onClick: restore, style: { ...ghost, fontSize: 10.5, padding: "2px 7px", marginLeft: "auto" } }, "Relink group"))),
+                    divIn.length > 0 && subset.length <= 1 && scopeMode !== "vertical" && scopeMode !== "selection" && (React.createElement("div", { style: { marginTop: 10, background: "#f7f5ff", border: "1px solid #e9e4ff", borderRadius: 10,
                             padding: "9px 11px", display: "flex", alignItems: "center", gap: 8 } },
                         React.createElement("span", { style: { width: 12, height: 0, borderTop: `2px dashed ${C.unlinked}` } }),
                         React.createElement("span", { style: { fontSize: 12 } },
