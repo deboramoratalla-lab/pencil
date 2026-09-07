@@ -44,7 +44,8 @@ const ADDABLE = [
   { id:"x-vert",  platform:"X",        name:"Vertical", w:1080,h:1350,fam:"vertical" },
 ];
 
-const LABEL={logo:"Logo",headline:"Headline",subhead:"Sub-headline",cta:"CTA",fineprint:"Fineprint"};
+const LABEL={logo:"Logo",headline:"Headline",subhead:"Sub-headline",cta:"CTA",fineprint:"Fineprint",background:"Background",product:"Product imagery"};
+const VISUAL_EL=new Set(["background","product"]);
 const AREA=42000, GAP=42, FGAP=96, ORDER=["landscape","square","vertical","tall","portrait"];
 const RAIL=48, PANEL=308, TOP=56;
 /* Pencil is Inter everywhere in-product. Numeric metadata uses tabular figures
@@ -192,15 +193,15 @@ const FIGMA_LOGO="./assets/figma/Vector.svg";
 
 /* The original challenge assets are used as the visual base; editable copy
    layers remain above them so the multi-format behavior stays demonstrable. */
-function Scene({fmt}){
+function Scene({fmt,onPick,selected,anchor}){
   const productWidth=fmt?.fam==="portrait"?"58%":fmt?.fam==="tall"?"53%":fmt?.fam==="vertical"?"48%":fmt?.fam==="square"?"39%":"24%";
   const productRight=fmt?.fam==="portrait"?"14%":fmt?.fam==="vertical"?"12%":"10%";
   const productBottom=fmt?.fam==="portrait"?"20%":fmt?.fam==="tall"?"16%":fmt?.fam==="vertical"?"16%":fmt?.fam==="square"?"16%":"8%";
   return (
     <>
-    <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>
-      <img src={FIGMA_BG} alt="" draggable={false} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}}/>
-      <img src={FIGMA_PRODUCT} alt="" draggable={false} style={{position:"absolute",right:productRight,bottom:productBottom,width:productWidth,height:"auto",objectFit:"contain"}}/>
+    <div style={{position:"absolute",inset:0,pointerEvents:"auto",overflow:"hidden"}}>
+      <img onClick={e=>onPick?.("background",e)} src={FIGMA_BG} alt="Background" draggable={false} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",cursor:"pointer",outline:selected==="background"?`${anchor?2:1}px solid ${C.unlinked}`:"none",outlineOffset:selected==="background"?"-2px":0}}/>
+      <img onClick={e=>onPick?.("product",e)} src={FIGMA_PRODUCT} alt="Product imagery" draggable={false} style={{position:"absolute",right:productRight,bottom:productBottom,width:productWidth,height:"auto",objectFit:"contain",cursor:"pointer",outline:selected==="product"?`${anchor?2:1}px solid ${C.unlinked}`:"none",outlineOffset:selected==="product"?"2px":0}}/>
     </div>
     {false && (
       <svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}}>
@@ -1058,14 +1059,18 @@ export default function PencilCanvas(){
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
                   </div>
                 )}
-                <div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Local composition stays editable per format</div>
+                <div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native Pencil tools available per format · copy, background, product imagery and composition stay editable locally</div>
                 {sel&&anchor&&approved[`${anchor}:${sel}`]&&(
                   <div style={{fontSize:11.5,color:"#2f8a54",background:"#edf8f0",border:"1px solid #bfe5c9",borderRadius:8,padding:"7px 9px",marginBottom:10}}>
                     <span style={{display:"inline-block",width:7,height:7,borderRadius:9,background:"#41a66a",marginRight:7}}/>
                     Approved · change applied
                   </div>
                 )}
-                {(
+                {VISUAL_EL.has(sel)?(
+                  <div style={{border:"1px solid #e0dcd4",borderRadius:9,padding:"10px 11px",fontSize:12,color:"#6b6960",background:"#f7f6f3",lineHeight:1.4}}>
+                    Edit this {LABEL[sel].toLowerCase()} with Pencil’s native canvas tools. Its local composition can still be tracked and reviewed here.
+                  </div>
+                ):(
                   <input aria-label={`Edit ${LABEL[sel]}`} readOnly={scopeMode==="selection"&&!reviewEditing} value={subset.length?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
                     style={{width:"100%",border:"1px solid #e0dcd4",borderRadius:9,padding:"9px 11px",
                       fontSize:13.5,boxSizing:"border-box",fontFamily:"inherit",background:scopeMode==="selection"&&!reviewEditing?"#f7f6f3":"#fcfbf9"}}/>
@@ -1137,7 +1142,7 @@ export default function PencilCanvas(){
                     </div>
                     <div style={{display:"flex",gap:7,marginTop:10}}>
                       <button onClick={adapt} style={primary} title="Apply recommended layout adaptation"><AiIcon size={13}/> Improve {broken.length}</button>
-                      <button onClick={()=>{setSel(null);clearSpot();}} style={ghost}>Edit manually</button>
+                      <button onClick={()=>{setSel(null);setSubset([]);setScopeMode("all");setReviewEditing(false);clearSpot();}} style={ghost}>Review later</button>
                     </div>
                   </div>
                 )}
@@ -1251,7 +1256,7 @@ function Ad({fmt,els,valIn,carries,sel,isAbs,isBrk,isDiv,adapted,subAdapted=1,ct
 
       {/* one source asset, cropped by each ratio — this is the scaling story.
           Scene renders always; a real photo layers over it when PHOTO is set. */}
-      <Scene fmt={fmt}/>
+      <Scene fmt={fmt} onPick={onPick} selected={sel} anchor={isAnchor}/>
       {PHOTO && (
         <img src={PHOTO} alt="" draggable={false}
           style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",

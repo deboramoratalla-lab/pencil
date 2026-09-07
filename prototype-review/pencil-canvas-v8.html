@@ -338,7 +338,8 @@ const ADDABLE = [
     { id: "ig-expl", platform: "Instagram", name: "Explore", w: 1080, h: 1080, fam: "square" },
     { id: "x-vert", platform: "X", name: "Vertical", w: 1080, h: 1350, fam: "vertical" },
 ];
-const LABEL = { logo: "Logo", headline: "Headline", subhead: "Sub-headline", cta: "CTA", fineprint: "Fineprint" };
+const LABEL = { logo: "Logo", headline: "Headline", subhead: "Sub-headline", cta: "CTA", fineprint: "Fineprint", background: "Background", product: "Product imagery" };
+const VISUAL_EL = new Set(["background", "product"]);
 const AREA = 42000, GAP = 42, FGAP = 96, ORDER = ["landscape", "square", "vertical", "tall", "portrait"];
 const RAIL = 48, PANEL = 308, TOP = 56;
 /* Pencil is Inter everywhere in-product. Numeric metadata uses tabular figures
@@ -500,14 +501,14 @@ const FIGMA_PRODUCT = "./assets/figma/15160 [Converted]-02 2.png";
 const FIGMA_LOGO = "./assets/figma/Vector.svg";
 /* The original challenge assets are used as the visual base; editable copy
    layers remain above them so the multi-format behavior stays demonstrable. */
-function Scene({ fmt }) {
+function Scene({ fmt, onPick, selected, anchor }) {
     const productWidth = fmt?.fam === "portrait" ? "58%" : fmt?.fam === "tall" ? "53%" : fmt?.fam === "vertical" ? "48%" : fmt?.fam === "square" ? "39%" : "24%";
     const productRight = fmt?.fam === "portrait" ? "14%" : fmt?.fam === "vertical" ? "12%" : "10%";
     const productBottom = fmt?.fam === "portrait" ? "20%" : fmt?.fam === "tall" ? "16%" : fmt?.fam === "vertical" ? "16%" : fmt?.fam === "square" ? "16%" : "8%";
     return (React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" } },
-            React.createElement("img", { src: FIGMA_BG, alt: "", draggable: false, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }),
-            React.createElement("img", { src: FIGMA_PRODUCT, alt: "", draggable: false, style: { position: "absolute", right: productRight, bottom: productBottom, width: productWidth, height: "auto", objectFit: "contain" } })),
+        React.createElement("div", { style: { position: "absolute", inset: 0, pointerEvents: "auto", overflow: "hidden" } },
+            React.createElement("img", { onClick: e => onPick?.("background", e), src: FIGMA_BG, alt: "Background", draggable: false, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", cursor: "pointer", outline: selected === "background" ? `${anchor ? 2 : 1}px solid ${C.unlinked}` : "none", outlineOffset: selected === "background" ? "-2px" : 0 } }),
+            React.createElement("img", { onClick: e => onPick?.("product", e), src: FIGMA_PRODUCT, alt: "Product imagery", draggable: false, style: { position: "absolute", right: productRight, bottom: productBottom, width: productWidth, height: "auto", objectFit: "contain", cursor: "pointer", outline: selected === "product" ? `${anchor ? 2 : 1}px solid ${C.unlinked}` : "none", outlineOffset: selected === "product" ? "2px" : 0 } })),
         false && (React.createElement("svg", { viewBox: "0 0 1000 1000", preserveAspectRatio: "xMidYMid slice", style: { position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" } },
             React.createElement("defs", null,
                 React.createElement("linearGradient", { id: "pg-bg", x1: "0", y1: "0", x2: "1", y2: "1" },
@@ -1326,11 +1327,14 @@ function PencilCanvas() {
                         placed.find(f => f.id === anchor).platform,
                         " \u00B7 ",
                         divIn.includes(anchor) ? "Local override" : "Shared source")),
-                    React.createElement("div", { title: "Native Pencil editing tools remain available on each format", style: { fontSize: 10.5, color: "#9a968d", marginBottom: 10 } }, "Local composition stays editable per format"),
+                    React.createElement("div", { title: "Native Pencil editing tools remain available on each format", style: { fontSize: 10.5, color: "#9a968d", marginBottom: 10 } }, "Native Pencil tools available per format \u00B7 copy, background, product imagery and composition stay editable locally"),
                     sel && anchor && approved[`${anchor}:${sel}`] && (React.createElement("div", { style: { fontSize: 11.5, color: "#2f8a54", background: "#edf8f0", border: "1px solid #bfe5c9", borderRadius: 8, padding: "7px 9px", marginBottom: 10 } },
                         React.createElement("span", { style: { display: "inline-block", width: 7, height: 7, borderRadius: 9, background: "#41a66a", marginRight: 7 } }),
                         "Approved \u00B7 change applied")),
-                    (React.createElement("input", { "aria-label": `Edit ${LABEL[sel]}`, readOnly: scopeMode === "selection" && !reviewEditing, value: subset.length ? valIn(sel, subset[0]) : content[sel], onChange: e => edit(e.target.value), style: { width: "100%", border: "1px solid #e0dcd4", borderRadius: 9, padding: "9px 11px",
+                    VISUAL_EL.has(sel) ? (React.createElement("div", { style: { border: "1px solid #e0dcd4", borderRadius: 9, padding: "10px 11px", fontSize: 12, color: "#6b6960", background: "#f7f6f3", lineHeight: 1.4 } },
+                        "Edit this ",
+                        LABEL[sel].toLowerCase(),
+                        " with Pencil\u2019s native canvas tools. Its local composition can still be tracked and reviewed here.")) : (React.createElement("input", { "aria-label": `Edit ${LABEL[sel]}`, readOnly: scopeMode === "selection" && !reviewEditing, value: subset.length ? valIn(sel, subset[0]) : content[sel], onChange: e => edit(e.target.value), style: { width: "100%", border: "1px solid #e0dcd4", borderRadius: 9, padding: "9px 11px",
                             fontSize: 13.5, boxSizing: "border-box", fontFamily: "inherit", background: scopeMode === "selection" && !reviewEditing ? "#f7f6f3" : "#fcfbf9" } })),
                     scopeMode === "selection" && !reviewEditing && (React.createElement("button", { onClick: () => setReviewEditing(true), style: { ...ghost, marginTop: 8, width: "100%", fontSize: 11.5 } }, "Edit this set")),
                     anchor && !divIn.includes(anchor) && (React.createElement("button", { onClick: () => diverge(anchor), style: { ...ghost, marginTop: 9, width: "100%" } }, "Unlink this format")),
@@ -1392,7 +1396,7 @@ function PencilCanvas() {
                                 React.createElement(AiIcon, { size: 13 }),
                                 " Improve ",
                                 broken.length),
-                            React.createElement("button", { onClick: () => { setSel(null); clearSpot(); }, style: ghost }, "Edit manually")))),
+                            React.createElement("button", { onClick: () => { setSel(null); setSubset([]); setScopeMode("all"); setReviewEditing(false); clearSpot(); }, style: ghost }, "Review later")))),
                     adapted && broken.length === 0 && (React.createElement("div", { style: { marginTop: 12, background: "#f5f1ff", border: "1px solid #d9ccff",
                             borderRadius: 10, padding: 11 } },
                         React.createElement("div", { style: { fontSize: 12, color: "#5c43b6", lineHeight: 1.45 } },
@@ -1471,7 +1475,7 @@ function Ad({ fmt, els, valIn, carries, sel, isAbs, isBrk, isDiv, adapted, subAd
             /* tier 3 — the only loud signal, and only while a decision is open */
             boxShadow: isBrk ? `0 0 0 2px ${C.warn}` : "0 1px 3px rgba(0,0,0,.16)",
             userSelect: "none", transition: "box-shadow .15s" } },
-        React.createElement(Scene, { fmt: fmt }),
+        React.createElement(Scene, { fmt: fmt, onPick: onPick, selected: sel, anchor: isAnchor }),
         PHOTO && (React.createElement("img", { src: PHOTO, alt: "", draggable: false, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
                 objectPosition: "52% 45%", pointerEvents: "none" }, onError: e => { e.currentTarget.style.display = "none"; } })),
         React.createElement("div", { style: { position: "absolute", inset: 0, pointerEvents: "none",
