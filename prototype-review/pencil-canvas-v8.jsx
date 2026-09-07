@@ -1059,8 +1059,8 @@ export default function PencilCanvas(){
                     {placed.find(f=>f.id===anchor).platform} · {divIn.includes(anchor)?"Local override":"Shared source"}
                   </div>
                 )}
-                <div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native Pencil tools available per format · copy, typography, imagery and composition stay editable locally</div>
-                {sel&&anchor&&approved[`${anchor}:${sel}`]&&(
+                {broken.length===0&&!adapted&&<div title="Native Pencil editing tools remain available on each format" style={{fontSize:10.5,color:"#9a968d",marginBottom:10}}>Native Pencil tools available per format · copy, typography, imagery and composition stay editable locally</div>}
+                {sel&&anchor&&approved[`${anchor}:${sel}`]&&broken.length===0&&(
                   <div style={{fontSize:11.5,color:"#2f8a54",background:"#edf8f0",border:"1px solid #bfe5c9",borderRadius:8,padding:"7px 9px",marginBottom:10}}>
                     <span style={{display:"inline-block",width:7,height:7,borderRadius:9,background:"#41a66a",marginRight:7}}/>
                     Approved · change applied
@@ -1081,7 +1081,7 @@ export default function PencilCanvas(){
                 {anchor&&!divIn.includes(anchor)&&(
                   <button onClick={()=>diverge(anchor)} style={{...ghost,marginTop:9,width:"100%"}}>Unlink this format</button>
                 )}
-                {divIn.length>0&&(
+                {divIn.length>0&&subset.length<=1&&(
                   <div style={{marginTop:10,background:"#f7f5ff",border:"1px solid #e9e4ff",borderRadius:10,
                     padding:"9px 11px",display:"flex",alignItems:"center",gap:8}}>
                     <span style={{width:12,height:0,borderTop:`2px dashed ${C.unlinked}`}}/>
