@@ -271,6 +271,7 @@ export default function PencilCanvas(){
   const [ov,setOv]=useState({}); const [unrev,setUnrev]=useState({});
   const [sel,setSel]=useState(null); const [subset,setSubset]=useState([]);
   const [scopeMode,setScopeMode]=useState("all");
+  const [reviewEditing,setReviewEditing]=useState(false);
   const [approved,setApproved]=useState({});
   const [adapted,setAdapted]=useState(false);
   const [adaptedCount,setAdaptedCount]=useState(0);
@@ -352,14 +353,14 @@ export default function PencilCanvas(){
   const pick=(el,fid,shift)=>{
     setDemo(false); setPin(false);
     if(shift&&sel===el){setSubset(s=>s.includes(fid)?s.filter(i=>i!==fid):s.concat(fid));return;}
-    setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setScopeMode(ov[el]?.[fid]!==undefined?"local":"all");setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
+    setSel(el);setAnchor(fid);setSubset(ov[el]?.[fid]!==undefined?[fid]:[]);setScopeMode(ov[el]?.[fid]!==undefined?"local":"all");setReviewEditing(false);setAdapted(false);setFocus(null);setAudit(false);setFmtMenu(false);
   };
   const chooseScope=mode=>{
     setScopeMode(mode);
     if(mode==="all") setSubset([]);
     else if(mode==="vertical") setSubset(placed.filter(f=>f.fam==="portrait").map(f=>f.id));
     else if(mode==="local"&&anchor) setSubset([anchor]);
-    setAdapted(false);setFocus(null);
+    setReviewEditing(false);setAdapted(false);setFocus(null);
   };
   const runWalkthrough=()=>{
     clearTimeout(walkTimer.current);
@@ -563,6 +564,7 @@ export default function PencilCanvas(){
       setAnchor(ids[0]);
       setSubset(ids);
       setScopeMode(ids.length===1?"local":"selection");
+      setReviewEditing(false);
       setAdapted(false);
       setTyping(false);
     }
@@ -1064,9 +1066,12 @@ export default function PencilCanvas(){
                   </div>
                 )}
                 {(
-                  <input aria-label={`Edit ${LABEL[sel]}`} value={subset.length?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
+                  <input aria-label={`Edit ${LABEL[sel]}`} readOnly={scopeMode==="selection"&&!reviewEditing} value={subset.length?valIn(sel,subset[0]):content[sel]} onChange={e=>edit(e.target.value)}
                     style={{width:"100%",border:"1px solid #e0dcd4",borderRadius:9,padding:"9px 11px",
-                      fontSize:13.5,boxSizing:"border-box",fontFamily:"inherit",background:"#fcfbf9"}}/>
+                      fontSize:13.5,boxSizing:"border-box",fontFamily:"inherit",background:scopeMode==="selection"&&!reviewEditing?"#f7f6f3":"#fcfbf9"}}/>
+                )}
+                {scopeMode==="selection"&&!reviewEditing&&(
+                  <button onClick={()=>setReviewEditing(true)} style={{...ghost,marginTop:8,width:"100%",fontSize:11.5}}>Edit this set</button>
                 )}
                 {anchor&&!divIn.includes(anchor)&&(
                   <button onClick={()=>diverge(anchor)} style={{...ghost,marginTop:9,width:"100%"}}>Unlink this format</button>

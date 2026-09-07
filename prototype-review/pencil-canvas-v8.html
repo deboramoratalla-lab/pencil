@@ -554,6 +554,7 @@ function PencilCanvas() {
     const [sel, setSel] = useState(null);
     const [subset, setSubset] = useState([]);
     const [scopeMode, setScopeMode] = useState("all");
+    const [reviewEditing, setReviewEditing] = useState(false);
     const [approved, setApproved] = useState({});
     const [adapted, setAdapted] = useState(false);
     const [adaptedCount, setAdaptedCount] = useState(0);
@@ -653,6 +654,7 @@ function PencilCanvas() {
         setAnchor(fid);
         setSubset(ov[el]?.[fid] !== undefined ? [fid] : []);
         setScopeMode(ov[el]?.[fid] !== undefined ? "local" : "all");
+        setReviewEditing(false);
         setAdapted(false);
         setFocus(null);
         setAudit(false);
@@ -666,6 +668,7 @@ function PencilCanvas() {
             setSubset(placed.filter(f => f.fam === "portrait").map(f => f.id));
         else if (mode === "local" && anchor)
             setSubset([anchor]);
+        setReviewEditing(false);
         setAdapted(false);
         setFocus(null);
     };
@@ -949,6 +952,7 @@ function PencilCanvas() {
             setAnchor(ids[0]);
             setSubset(ids);
             setScopeMode(ids.length === 1 ? "local" : "selection");
+            setReviewEditing(false);
             setAdapted(false);
             setTyping(false);
         }
@@ -1326,8 +1330,9 @@ function PencilCanvas() {
                     sel && anchor && approved[`${anchor}:${sel}`] && (React.createElement("div", { style: { fontSize: 11.5, color: "#2f8a54", background: "#edf8f0", border: "1px solid #bfe5c9", borderRadius: 8, padding: "7px 9px", marginBottom: 10 } },
                         React.createElement("span", { style: { display: "inline-block", width: 7, height: 7, borderRadius: 9, background: "#41a66a", marginRight: 7 } }),
                         "Approved \u00B7 change applied")),
-                    (React.createElement("input", { "aria-label": `Edit ${LABEL[sel]}`, value: subset.length ? valIn(sel, subset[0]) : content[sel], onChange: e => edit(e.target.value), style: { width: "100%", border: "1px solid #e0dcd4", borderRadius: 9, padding: "9px 11px",
-                            fontSize: 13.5, boxSizing: "border-box", fontFamily: "inherit", background: "#fcfbf9" } })),
+                    (React.createElement("input", { "aria-label": `Edit ${LABEL[sel]}`, readOnly: scopeMode === "selection" && !reviewEditing, value: subset.length ? valIn(sel, subset[0]) : content[sel], onChange: e => edit(e.target.value), style: { width: "100%", border: "1px solid #e0dcd4", borderRadius: 9, padding: "9px 11px",
+                            fontSize: 13.5, boxSizing: "border-box", fontFamily: "inherit", background: scopeMode === "selection" && !reviewEditing ? "#f7f6f3" : "#fcfbf9" } })),
+                    scopeMode === "selection" && !reviewEditing && (React.createElement("button", { onClick: () => setReviewEditing(true), style: { ...ghost, marginTop: 8, width: "100%", fontSize: 11.5 } }, "Edit this set")),
                     anchor && !divIn.includes(anchor) && (React.createElement("button", { onClick: () => diverge(anchor), style: { ...ghost, marginTop: 9, width: "100%" } }, "Unlink this format")),
                     divIn.length > 0 && (React.createElement("div", { style: { marginTop: 10, background: "#f7f5ff", border: "1px solid #e9e4ff", borderRadius: 10,
                             padding: "9px 11px", display: "flex", alignItems: "center", gap: 8 } },
