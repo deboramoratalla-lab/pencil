@@ -3,10 +3,6 @@
     {
       "source": "/assets/:path*",
       "destination": "/prototype-review/assets/:path*"
-    },
-    {
-      "source": "/",
-      "destination": "/prototype-review/pencil-canvas-v8.html"
     }
   ]
 }
