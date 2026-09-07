@@ -678,8 +678,9 @@ function PencilCanvas() {
         const vertical = placed.filter(f => f.fam === "portrait").map(f => f.id);
         const steps = [
             ["1 / 7 · Select any element to edit across formats", () => { setDemo(true); setSel(null); setSubset([]); setScopeMode("all"); setFocus(null); setPin(false); }],
-            ["2 / 7 · Headline selected · shared across formats", () => { setDemo(false); setSel("headline"); setAnchor(placed[0]?.id || null); setSubset([]); setScopeMode("all"); setFocus(null); }],
-            ["3 / 7 · Choose a 9:16 group · keep other ratios independent", () => { setScopeMode("vertical"); setSubset(vertical); setFocus(vertical); setPin(true); }],
+            ["2 / 7 · Headline selected · shared copy; visual edits stay native", () => { setDemo(false); setSel("headline"); setAnchor(placed[0]?.id || null); setFocus(null); if (placed[0])
+                    showFormats([placed[0].id], "headline"); setSubset([]); setScopeMode("all"); }],
+            ["3 / 7 · Choose a 9:16 group · keep other ratios independent", () => { showFormats(vertical, "headline"); setScopeMode("vertical"); setSubset(vertical); setFocus(vertical); setPin(true); }],
             ["4 / 7 · Add copy · the 9:16 group reaches its limit", () => { setOv(o => { const n = { ...(o.headline || {}) }; vertical.forEach(id => n[id] = "Discover beautiful shiny hair powered by nourishing argan oil"); return { ...o, headline: n }; }); setFmtAdapted({}); setTyping(false); }],
             ["5 / 7 · One group diverges · local constraint detected", () => { setFocus(vertical); setPin(true); setUnrev(u => { const n = { ...u }; vertical.forEach(id => n[`${id}:headline`] = true); return n; }); }],
             ["6 / 7 · AI recommends a layout adaptation", () => { setAdapted(true); setAdaptedIds(vertical); setAdaptedCount(vertical.length); setFmtAdapted(m => { const n = { ...m }; vertical.forEach(id => n[id] = .82); return n; }); }],
