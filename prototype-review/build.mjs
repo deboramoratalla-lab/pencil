@@ -17,6 +17,6 @@ const compiled = ts.transpileModule(source, {
   },
 }).outputText;
 
-const html = `<!doctype html><html><head><meta charset="utf-8"><title>Pencil canvas v8</title></head><body><div id="root"></div><script>${fs.readFileSync(reactPath,"utf8")}</script><script>${fs.readFileSync(reactDomPath,"utf8")}</script><script>${compiled}\nReactDOM.createRoot(document.getElementById("root")).render(React.createElement(PencilCanvas));</script></body></html>`;
+const html = `<!doctype html><html><head><meta charset="utf-8"><title>Pencil canvas v8</title><script defer src="https://cdn.vercel-insights.com/v1/script.js"></script></head><body><div id="root"></div><script>${fs.readFileSync(reactPath,"utf8")}</script><script>${fs.readFileSync(reactDomPath,"utf8")}</script><script>${compiled}\nReactDOM.createRoot(document.getElementById("root")).render(React.createElement(PencilCanvas));</script></body></html>`;
 
 fs.writeFileSync(new URL("./pencil-canvas-v8.html", import.meta.url), html);
