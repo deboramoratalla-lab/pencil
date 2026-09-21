@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 /* ------------------------------------------------------------------ *
  *  Multi-format canvas · Pencil
@@ -1351,6 +1352,7 @@ export default function PencilCanvas(){
           </div>
         </div>
       </div>
+      <Analytics />
     </div>
   );
 }
