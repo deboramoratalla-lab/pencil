@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/pencil-canvas-v9.html",
+      "destination": "/prototype-review/pencil-canvas-v9.html"
+    },
+    {
+      "source": "/pencil-canvas-v8.html",
+      "destination": "/prototype-review/pencil-canvas-v8.html"
+    },
+    {
       "source": "/assets/:path*",
       "destination": "/prototype-review/assets/:path*"
     }
