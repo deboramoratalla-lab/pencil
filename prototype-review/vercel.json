@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/pencil-canvas-v8.html"
+      "destination": "/pencil-canvas-v9.html"
     }
   ]
 }

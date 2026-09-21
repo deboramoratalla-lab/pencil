@@ -4,19 +4,20 @@ An interactive follow-up to the Pencil Product Designer take-home challenge.
 
 ## Prototype
 
-- **Live demo:** [pencil-two-nu.vercel.app](https://pencil-two-nu.vercel.app/)
-- **Standalone file:** [`prototype-review/pencil-canvas-v8.html`](prototype-review/pencil-canvas-v8.html)
-- **Editable source:** [`prototype-review/pencil-canvas-v8.jsx`](prototype-review/pencil-canvas-v8.jsx)
+- **Live demo:** [prototype-review-kappa.vercel.app/pencil-canvas-v9.html](https://prototype-review-kappa.vercel.app/pencil-canvas-v9.html)
+- **Standalone file:** [`prototype-review/pencil-canvas-v9.html`](prototype-review/pencil-canvas-v9.html)
+- **Editable source:** [`prototype-review/pencil-canvas-v9.jsx`](prototype-review/pencil-canvas-v9.jsx)
 
 Start with **Play walkthrough** in the top bar. It demonstrates the core journey:
 
 1. Select a shared creative element.
 2. Edit it once and see the change propagate.
 3. Detect a format-specific composition constraint.
-4. Review the contextual AI recommendation.
-5. Apply and approve the local adaptation.
+4. Distinguish safe auto-fitting from a genuine composition conflict.
+5. Review the contextual AI recommendation.
+6. Apply and approve the local adaptation.
 
-You can then explore the canvas manually, open **Consistency**, add or duplicate formats, unlink/relink a format, and inspect history and undo/redo.
+You can then explore the canvas manually, open **Consistency**, add or duplicate formats, unlink/relink a format, add fine print, and inspect history and undo/redo.
 
 ## Product idea
 
@@ -24,8 +25,10 @@ The challenge asks how users could view and edit multiple formats of the same cr
 
 - shared content propagates automatically;
 - each format keeps local composition control;
-- AI appears only when a format diverges from the shared creative;
+- AI appears only when a format has a genuine composition conflict;
 - adaptations change layout without changing shared copy;
+- changes can propagate globally, by aspect-ratio group, or locally;
+- CTA and fine print respect bottom anchoring and format safe areas;
 - review states are visible but remain secondary to the canvas.
 
 State language is intentionally simple: amber means **needs review**, purple means **AI adaptation pending**, and green means **approved**.
@@ -40,7 +43,7 @@ The generated HTML is self-contained for normal use. To rebuild it after editing
 
 ```bash
 cd prototype-review
-node build.mjs
+node build-v9.mjs
 ```
 
 The interaction checks can be run with:
